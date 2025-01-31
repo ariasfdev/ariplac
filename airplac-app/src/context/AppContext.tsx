@@ -1,0 +1,87 @@
+import React, {
+  createContext,
+  useContext,
+  useState,
+  ReactNode,
+  useEffect,
+} from "react";
+import axios from "axios";
+
+interface Pedido {
+  id: string;
+  remito: string;
+  fecha: string;
+  cliente: string;
+  direccion: string;
+  contacto: string;
+  detalle: string;
+  cantidadM2: number;
+  materiales: string;
+  total: number;
+  estado: string;
+}
+
+interface AppContextType {
+  isNavVisible: boolean;
+  setIsNavVisible: React.Dispatch<React.SetStateAction<boolean>>;
+  pedidos: Pedido[];
+  fetchPedidos: () => Promise<void>;
+  addPedido: (nuevoPedido: Pedido) => void;
+  error: string | null;
+  setError: React.Dispatch<React.SetStateAction<string | null>>;
+}
+
+const AppContext = createContext<AppContextType | undefined>(undefined);
+
+export const AppProvider: React.FC<{ children: ReactNode }> = ({
+  children,
+}) => {
+  const [isNavVisible, setIsNavVisible] = useState(true);
+  const [pedidos, setPedidos] = useState<Pedido[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  // Función para obtener pedidos desde el backend
+  const fetchPedidos = async () => {
+    try {
+      const response = await axios.get("http://localhost:3000/api/pedidos/");
+      setPedidos(response.data);
+    } catch (err) {
+      console.error("Error al obtener los pedidos:", err);
+      setError("No se pudieron cargar los pedidos.");
+    }
+  };
+
+  // Función para agregar un pedido
+  const addPedido = (nuevoPedido: Pedido) => {
+    setPedidos((prev) => [...prev, nuevoPedido]);
+  };
+
+  // Llama a fetchPedidos al cargar el proveedor
+  useEffect(() => {
+    fetchPedidos();
+  }, []);
+
+  return (
+    <AppContext.Provider
+      value={{
+        isNavVisible,
+        setIsNavVisible,
+        pedidos,
+        fetchPedidos,
+        addPedido,
+        error,
+        setError,
+      }}
+    >
+      {children}
+    </AppContext.Provider>
+  );
+};
+
+export const useAppContext = (): AppContextType => {
+  const context = useContext(AppContext);
+  if (!context) {
+    throw new Error("useAppContext debe ser usado dentro de un AppProvider");
+  }
+  return context;
+};
