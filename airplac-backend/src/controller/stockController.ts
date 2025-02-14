@@ -55,18 +55,20 @@ export const getAllStocksImportacion = async (
   }
 };
 
-export const createStock = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
+export const createStock = async (req: Request, res: Response) => {
   try {
+    console.log("Datos recibidos:", req.body); // ✅ Verifica los datos que llegan al backend
+
     const newStock = new Stock(req.body);
     await newStock.save();
     res
       .status(201)
       .json({ message: "Stock creado con éxito", stock: newStock });
-  } catch (error) {
-    res.status(400).json({ message: "Error al crear el stock", error });
+  } catch (error: any) {
+    console.error("Error al crear el stock:", error);
+    res
+      .status(400)
+      .json({ message: "Error al crear el stock", error: error.message }); // ✅ Envía el mensaje exacto del error
   }
 };
 

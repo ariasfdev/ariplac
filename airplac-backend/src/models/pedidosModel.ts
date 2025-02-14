@@ -59,7 +59,15 @@ const PedidoSchema: Schema = new Schema({
   estado: {
     type: String,
     required: true,
-    enum: ["pendiente", "entregado", "cancelado", "disponible", "retira"], // Estados permitidos
+    enum: [
+      "pendiente",
+      "entregado",
+      "instalacion",
+      "disponible",
+      "retira",
+      "enviar",
+      "remitado",
+    ], // Estados permitidos
   },
   fecha_pedido: { type: Date, required: true },
   fecha_entrega_estimada: { type: Date, required: true },
@@ -85,6 +93,12 @@ const PedidoSchema: Schema = new Schema({
   descuento: { type: Number },
   adelanto: { type: Number },
   total: { type: Number, required: true },
+  remitos: [
+    {
+      url: { type: String },
+      fecha: { type: Date, default: Date.now },
+    },
+  ],
 });
 
 // Forzar el uso de la colección "Pedidos"
