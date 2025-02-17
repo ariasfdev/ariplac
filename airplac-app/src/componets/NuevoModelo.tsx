@@ -8,6 +8,7 @@ interface Modelo {
   ancho: string;
   alto: string;
   tipo: string;
+  placas_por_metro: number; // <-- Nueva propiedad
 }
 
 interface NuevoModeloProps {
@@ -23,6 +24,7 @@ const NuevoModelo: React.FC<NuevoModeloProps> = ({
   modelo,
   onSave,
 }) => {
+  // Estado inicial para nuevo modelo
   const [formData, setFormData] = React.useState<Modelo>(
     modelo || {
       _id: "",
@@ -31,6 +33,7 @@ const NuevoModelo: React.FC<NuevoModeloProps> = ({
       ancho: "",
       alto: "",
       tipo: "",
+      placas_por_metro: 1, // Valor por defecto si quieres
     }
   );
 
@@ -39,7 +42,11 @@ const NuevoModelo: React.FC<NuevoModeloProps> = ({
   }, [modelo]);
 
   const handleChange = (field: keyof Modelo, value: string) => {
-    setFormData({ ...formData, [field]: value });
+    if (field === "placas_por_metro") {
+      setFormData({ ...formData, [field]: Number(value) });
+    } else {
+      setFormData({ ...formData, [field]: value });
+    }
   };
 
   const handleSubmit = () => {
@@ -67,7 +74,13 @@ const NuevoModelo: React.FC<NuevoModeloProps> = ({
           value={formData.producto}
           onChange={(e) => handleChange("producto", e.target.value)}
         />
-
+        <label className="block mb-2">Placas por metro:</label>
+        <input
+          type="number"
+          className="input input-bordered w-full mb-4"
+          value={formData.placas_por_metro || ""}
+          onChange={(e) => handleChange("placas_por_metro", e.target.value)}
+        />
         <label className="block mb-2">Dimensiones:</label>
         <div className="flex gap-4 mb-4">
           <input

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import NuevoModelo from "../componets/NuevoModelo";
+import { API_BASE_URL } from "../config";
 
 interface Modelo {
   _id: string;
@@ -9,6 +10,7 @@ interface Modelo {
   ancho: string;
   alto: string;
   tipo: string;
+  placas_por_metro: number; // <-- Agregamos la propiedad
 }
 
 const Modelos = () => {
@@ -21,7 +23,7 @@ const Modelos = () => {
   useEffect(() => {
     const fetchModelos = async () => {
       try {
-        const response = await axios.get("http://localhost:3000/api/modelos/");
+        const response = await axios.get(`${API_BASE_URL}/modelos/`);
         setModelos(response.data);
         setLoading(false);
       } catch (err) {
@@ -46,6 +48,7 @@ const Modelos = () => {
       ancho: "",
       alto: "",
       tipo: "",
+      placas_por_metro: 1, // Valor inicial
     });
     setIsModalOpen(true);
   };
@@ -53,16 +56,17 @@ const Modelos = () => {
   const handleSave = async (modelo: Modelo) => {
     try {
       if (modelo._id) {
-        await axios.put(
-          `http://localhost:3000/api/modelos/${modelo._id}`,
-          modelo
-        );
+        // Editar modelo existente
+        await axios.put(`${API_BASE_URL}/modelos/${modelo._id}`, modelo);
       } else {
-        await axios.post("http://localhost:3000/api/modelos/", modelo);
+        // Crear nuevo modelo
+        await axios.post(`${API_BASE_URL}/modelos/`, modelo);
       }
       setIsModalOpen(false);
       setSelectedModelo(null);
-      const response = await axios.get("http://localhost:3000/api/modelos/");
+
+      // Refrescar lista
+      const response = await axios.get(`${API_BASE_URL}/modelos/`);
       setModelos(response.data);
     } catch (err) {
       console.error("Error al guardar el modelo:", err);
@@ -78,13 +82,13 @@ const Modelos = () => {
   }
 
   return (
-    <div>
-      <button className="btn btn-outline" onClick={() => nuevoModelo()}>
+    <div className="p-4">
+      <button className="btn btn-outline mb-4" onClick={() => nuevoModelo()}>
         Nuevo modelo
       </button>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {modelos.map((modelo) => (
-          <div key={modelo._id} className="card bg-base-100 w-96 shadow-xl">
+          <div key={modelo._id} className="card bg-base-100 shadow-xl">
             <figure>
               <img
                 src={
@@ -95,7 +99,7 @@ const Modelos = () => {
               />
             </figure>
             <div className="card-body">
-              <h2 className="card-title">{modelo.modelo}</h2>
+              <h2 className="card-title text-lg md:text-xl">{modelo.modelo}</h2>
               <p className="text-sm text-gray-600">
                 <strong>Producto:</strong> {modelo.producto}
               </p>
@@ -105,9 +109,13 @@ const Modelos = () => {
               <p className="text-sm text-gray-600">
                 <strong>Tipo:</strong> {modelo.tipo}
               </p>
+              {/* Nuevo campo para mostrar */}
+              <p className="text-sm text-gray-600">
+                <strong>Placas por metro:</strong> {modelo.placas_por_metro}
+              </p>
               <div className="card-actions justify-end">
                 <button
-                  className="btn btn-primary"
+                  className="btn btn-primary btn-sm md:btn-md"
                   onClick={() => handleEdit(modelo)}
                 >
                   Editar
@@ -116,18 +124,14 @@ const Modelos = () => {
             </div>
           </div>
         ))}
-
-        {/* <button className="btn btn-success" onClick={nuevoModelo}>
-          Nuevo Modelo
-        </button> */}
-
-        <NuevoModelo
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          modelo={selectedModelo}
-          onSave={handleSave}
-        />
       </div>
+
+      <NuevoModelo
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        modelo={selectedModelo}
+        onSave={handleSave}
+      />
     </div>
   );
 };

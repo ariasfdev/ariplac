@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Papa from "papaparse";
 import axios from "axios";
+import { API_BASE_URL } from "../../config";
 
 interface Stock {
   _id: string;
@@ -19,6 +20,7 @@ interface Pedido {
   };
   productos: {
     idStock: string;
+    idModelo: string;
     modelo: string;
     cantidad: number;
     unidad: string;
@@ -48,7 +50,7 @@ const ImportarPedido: React.FC = () => {
     const fetchStock = async () => {
       try {
         const response = await axios.get<Stock[]>(
-          `http://localhost:3000/api/stock/importacion/${idVendedor}`
+          `${API_BASE_URL}/stock/importacion/${idVendedor}`
         );
         console.log(response);
         setStock(response.data);
@@ -77,15 +79,17 @@ const ImportarPedido: React.FC = () => {
           return;
         }
 
-        // Mapear los datos del CSV al formato esperado por la API
-        const pedidosImportados: Pedido[] = data.map((row: any) => {
-          console.log(row);
+        const pedidosImportados: any[] = data.map((row: any) => {
+          const detalle = row.Detalle?.trim(); // Eliminar espacios en blanco
           const modeloEncontrado = stock.find(
-            (item) => item.modelo === row.Detalle
+            (item) => item.modelo.trim() === detalle
           );
+          console.log(modeloEncontrado);
 
-          if (!modeloEncontrado) {
-            console.warn(`Modelo no encontrado: ${row.Detalle}`);
+          if (!detalle) {
+            console.warn(`El campo 'Detalle' está vacío en la fila:`, row);
+          } else if (!modeloEncontrado) {
+            console.warn(`Modelo no encontrado para el detalle: ${detalle}`);
           }
 
           return {
@@ -98,12 +102,12 @@ const ImportarPedido: React.FC = () => {
             },
             productos: [
               {
-                idStock: modeloEncontrado?._id || "", // Buscar el idStock por modelo
-                modelo: row.Modelo || "",
+                idStock: modeloEncontrado?._id || "",
+                idModelo: modeloEncontrado?.idModelo || "",
+                modelo: detalle || "",
                 cantidad: parseFloat(row.Cantidad) || 0,
-                unidad: "M2", // Siempre M2
+                unidad: "M2",
                 materiales: row.Materiales,
-                idModelo: modeloEncontrado?.idModelo,
               },
             ],
             estado: row.Estado || "pendiente",
@@ -116,7 +120,7 @@ const ImportarPedido: React.FC = () => {
             flete: parseFloat(row.Flete) || 0,
             descuento: parseFloat(row.Descuento) || 0,
             adelanto: parseFloat(row.Adelanto) || 0,
-            total: row.Total,
+            total: parseFloat(row.Total) || 0,
           };
         });
 
@@ -136,9 +140,7 @@ const ImportarPedido: React.FC = () => {
 
     try {
       const results = await Promise.allSettled(
-        pedidos.map((pedido) =>
-          axios.post("http://localhost:3000/api/pedidos/", pedido)
-        )
+        pedidos.map((pedido) => axios.post(`${API_BASE_URL}/pedidos/`, pedido))
       );
 
       results.forEach((result, index) => {

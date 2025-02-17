@@ -2,13 +2,12 @@ import React from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import Nav from "../componets/Nav";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
-import { useAppContext } from "../context/AppContext"; // Importa el contexto
+import { useAppContext } from "../context/AppContext";
 
 const Home: React.FC = () => {
   const { isNavVisible, setIsNavVisible } = useAppContext();
-  const location = useLocation(); // Hook para obtener la ruta actual
+  const location = useLocation();
 
-  // Mapea los títulos en función de la ruta actual
   const getTitle = () => {
     switch (location.pathname) {
       case "/home/pedidos":
@@ -20,37 +19,32 @@ const Home: React.FC = () => {
       case "/home/admin":
         return "Administración";
       case "/home/modelos":
-        return "Gestion de modelos";
+        return "Gestión de Modelos";
       default:
         return "Inicio";
     }
   };
 
   return (
-    <div className="flex min-h-screen">
-      {/* Sidebar */}
+    <div className="flex flex-col md:flex-row min-h-screen">
       <Nav isNavVisible={isNavVisible} setIsNavVisible={setIsNavVisible} />
 
-      {/* Main Content */}
-      <main className="flex-1 p-6">
-        <h2
-          className={`text-2xl font-bold mb-4 transition-all duration-500 ease-in-out ${
-            isNavVisible
-              ? "text-left ml-0"
-              : "text-center ml-[50%] -translate-x-1/2"
-          }`}
-        >
-          {getTitle()}
-        </h2>
-        <div className="relative left-1 z-50 mb-2">
-          <button
-            onClick={() => setIsNavVisible(!isNavVisible)}
-            className="btn btn-circle btn-secondary text-xl"
-          >
-            {isNavVisible ? <FaChevronLeft /> : <FaChevronRight />}
-          </button>
-        </div>
+      <button
+        onClick={() => setIsNavVisible(!isNavVisible)}
+        className={`btn btn-circle btn-secondary text-xl fixed top-4 ${
+          isNavVisible ? "left-64" : "left-4"
+        } z-40 transition-all duration-500`}
+      >
+        {isNavVisible ? <FaChevronLeft /> : <FaChevronRight />}
+      </button>
 
+      <main className="flex-1 p-4 sm:p-6 md:p-8">
+        <div className="flex items-center justify-center mb-4">
+          {" "}
+          {/* Cambiado a justify-center */}
+          <h2 className="text-2xl font-bold text-center">{getTitle()}</h2>{" "}
+          {/* Alineación centrada */}
+        </div>
         <Outlet />
       </main>
     </div>

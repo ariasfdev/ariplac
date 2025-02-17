@@ -7,17 +7,17 @@ interface ModalProps {
 }
 
 const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children }) => {
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-      <div className="bg-base-200 rounded-lg shadow-lg p-6 w-full max-w-md relative">
+    <div className={`modal ${isOpen ? "modal-open" : ""}`}>
+      <div className="modal-box relative w-full max-w-md">
+        {/* Botón para cerrar el modal */}
         <button
-          className="absolute top-2 right-2 text-gray-500 hover:text-gray-800"
           onClick={onClose}
+          className="btn btn-sm btn-circle absolute right-2 top-2"
         >
-          ×
+          ✕
         </button>
+        {/* Contenido que pasamos como children */}
         {children}
       </div>
     </div>

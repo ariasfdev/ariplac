@@ -2,10 +2,12 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import NuevoStock from "../componets/NuevoStock";
 import AgregarStock from "../componets/AgregarStock";
-import { FaEllipsisV } from "react-icons/fa";
+import { MoreVertical } from "lucide-react";
+import { API_BASE_URL } from "../config";
 
 interface Stock {
   _id: string;
+  idModelo?: string;
   producto: string;
   modelo: string;
   cantidad_actual: number;
@@ -19,7 +21,6 @@ interface Stock {
 }
 
 const Stock: React.FC = () => {
-  // Estados
   const [stocks, setStocks] = useState<Stock[]>([]);
   const [filteredStocks, setFilteredStocks] = useState<Stock[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,17 +29,13 @@ const Stock: React.FC = () => {
   const [isAgregarStockOpen, setIsAgregarStockOpen] = useState(false);
   const [selectedStock, setSelectedStock] = useState<Stock | null>(null);
   const [modelos, setModelos] = useState<string[]>([]);
-  const [searchTerm, setSearchTerm] = useState(""); // Estado para la búsqueda
-  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
-  const toggleDropdown = (id: string) => {
-    setOpenDropdown(openDropdown === id ? null : id);
-  };
-  // Obtener datos desde la API
+  const [searchTerm, setSearchTerm] = useState("");
+
   const fetchStocks = async () => {
     try {
-      const response = await axios.get("http://localhost:3000/api/stock/");
+      const response = await axios.get(`${API_BASE_URL}/stock/`);
       setStocks(response.data);
-      setFilteredStocks(response.data); // Inicializar lista filtrada con la misma data
+      setFilteredStocks(response.data);
       setLoading(false);
     } catch (err) {
       setError("Error al cargar los stocks.");
@@ -48,8 +45,8 @@ const Stock: React.FC = () => {
 
   const fetchModelos = async () => {
     try {
-      const response = await axios.get("http://localhost:3000/api/modelos/");
-      setModelos(response.data.map((modelo: any) => modelo.modelo));
+      const response = await axios.get(`${API_BASE_URL}/modelos/`);
+      setModelos(response.data.map((modelo: any) => modelo));
     } catch (err) {
       console.error("Error al cargar los modelos:", err);
     }
@@ -60,28 +57,23 @@ const Stock: React.FC = () => {
     fetchModelos();
   }, []);
 
-  // Función para buscar en cualquier columna del stock
   const buscarStock = (value: string) => {
     setSearchTerm(value);
-
     if (!value) {
-      setFilteredStocks(stocks); // Restaurar datos originales
+      setFilteredStocks(stocks);
       return;
     }
 
     const searchTermLower = value.toLowerCase();
-
     const stockFiltrado = stocks.filter((stock) =>
       Object.values(stock).some(
         (val) =>
           typeof val === "string" && val.toLowerCase().includes(searchTermLower)
       )
     );
-
     setFilteredStocks(stockFiltrado);
   };
 
-  // Funciones para manejo de acciones
   const handleEdit = (stock: Stock) => {
     setSelectedStock(stock);
     setIsModalOpen(true);
@@ -95,15 +87,21 @@ const Stock: React.FC = () => {
   const handleSave = async (stock: Stock) => {
     try {
       if (stock._id) {
-        await axios.put(`http://localhost:3000/api/stock/${stock._id}`, stock);
+        await axios.put(`${API_BASE_URL}/stock/${stock._id}`, stock);
       } else {
-        await axios.post("http://localhost:3000/api/stock/", stock);
+        const { _id, idModelo, ...stockSinId } = stock;
+        const payload = idModelo ? { ...stockSinId, idModelo } : stockSinId;
+        await axios.post(`${API_BASE_URL}/stock/`, payload);
       }
+
       setIsModalOpen(false);
       setSelectedStock(null);
       fetchStocks();
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error al guardar el stock:", err);
+      if (err.response) {
+        console.error("Detalles del error:", err.response.data);
+      }
     }
   };
 
@@ -113,7 +111,7 @@ const Stock: React.FC = () => {
   ) => {
     try {
       if (selectedStock) {
-        await axios.post("http://localhost:3000/api/stock/actualizar-stock", {
+        await axios.post(`${API_BASE_URL}/stock/actualizar-stock`, {
           idStock: selectedStock._id,
           cantidad,
           responsable,
@@ -129,10 +127,30 @@ const Stock: React.FC = () => {
   if (loading) return <p>Cargando stocks...</p>;
   if (error) return <p className="text-red-500">{error}</p>;
 
+  const renderAcciones = (stock: Stock) => (
+    <div className="dropdown dropdown-end">
+      <button tabIndex={0} className="btn btn-sm btn-ghost">
+        <MoreVertical className="w-5 h-5" />
+      </button>
+      <ul
+        tabIndex={0}
+        className="dropdown-content menu p-2 shadow bg-base-200 rounded-box w-40 z-[9999]"
+      >
+        <li>
+          <button onClick={() => handleEdit(stock)}>Editar</button>
+        </li>
+        <li>
+          <button onClick={() => handleAgregarStock(stock)}>
+            Agregar Stock
+          </button>
+        </li>
+      </ul>
+    </div>
+  );
+
   return (
-    <div className="">
-      <div className="flex justify-between mb-4">
-        {/* Buscador */}
+    <div className="p-4">
+      <div className="flex flex-col sm:flex-row justify-between mb-4 gap-4">
         <label className="input input-bordered flex items-center gap-2">
           <input
             onChange={(e) => buscarStock(e.target.value)}
@@ -141,21 +159,8 @@ const Stock: React.FC = () => {
             placeholder="Buscar"
             value={searchTerm}
           />
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 16 16"
-            fill="currentColor"
-            className="h-4 w-4 opacity-70"
-          >
-            <path
-              fillRule="evenodd"
-              d="M9.965 11.026a5 5 0 1 1 1.06-1.06l2.755 2.754a.75.75 0 1 1-1.06 1.06l-2.755-2.754ZM10.5 7a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z"
-              clipRule="evenodd"
-            />
-          </svg>
         </label>
 
-        {/* Botón para nuevo stock */}
         <button
           className="btn btn-success"
           onClick={() => setIsModalOpen(true)}
@@ -164,59 +169,39 @@ const Stock: React.FC = () => {
         </button>
       </div>
 
-      {/* Tabla de stocks */}
-      <table className="table w-full">
-        <thead>
-          <tr>
-            <th>Producto</th>
-            <th>Modelo</th>
-            <th>Cantidad Actual</th>
-            <th>Unidad</th>
-            <th>Producción Diaria</th>
-            <th>Valor M2 Materiales</th>
-            <th>Valor M2 Pegamento</th>
-            <th>Valor M2 Sella</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredStocks.map((stock) => (
-            <tr key={stock._id}>
-              <td>{stock.producto}</td>
-              <td>{stock.modelo}</td>
-              <td>{stock.cantidad_actual}</td>
-              <td>{stock.unidad}</td>
-              <td>{stock.produccion_diaria}</td>
-              <td>{stock.valor_m2_materiales}</td>
-              <td>{stock.valor_m2_pegamento}</td>
-              <td>{stock.valor_m2_sella}</td>
-              <td className="relative">
-                <button
-                  className="btn btn-outline"
-                  onClick={() => toggleDropdown(stock._id)}
-                >
-                  <FaEllipsisV />
-                </button>
-
-                {openDropdown === stock._id && (
-                  <ul className="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52 absolute z-50">
-                    <li>
-                      <button onClick={() => handleEdit(stock)}>Editar</button>
-                    </li>
-                    <li>
-                      <button onClick={() => handleAgregarStock(stock)}>
-                        Agregar Stock
-                      </button>
-                    </li>
-                  </ul>
-                )}
-              </td>
+      <div className="mb-8">
+        <table className="table table-zebra w-full text-sm sm:text-base">
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th>Modelo</th>
+              <th>Cantidad Actual</th>
+              <th>Unidad</th>
+              <th>Producción Diaria</th>
+              <th>Valor M2 Materiales</th>
+              <th>Valor M2 Pegamento</th>
+              <th>Valor M2 Sella</th>
+              <th>Acciones</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {filteredStocks.map((stock) => (
+              <tr key={stock._id}>
+                <td>{stock.producto}</td>
+                <td>{stock.modelo}</td>
+                <td>{stock.cantidad_actual}</td>
+                <td>{stock.unidad}</td>
+                <td>{stock.produccion_diaria}</td>
+                <td>{stock.valor_m2_materiales}</td>
+                <td>{stock.valor_m2_pegamento}</td>
+                <td>{stock.valor_m2_sella}</td>
+                <td>{renderAcciones(stock)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
-      {/* Modales */}
       <NuevoStock
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}

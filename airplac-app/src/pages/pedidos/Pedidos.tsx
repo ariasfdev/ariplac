@@ -1,9 +1,9 @@
-import React from 'react';
+import React from "react";
 
-import Table from '../../componets/TablePedidos';
+import Table from "../../componets/TablePedidos";
 
 const Pedidos: React.FC = () => {
-   // Usa el estado del contexto
+  // Usa el estado del contexto
 
   return (
     <div className="relative">
