@@ -24,6 +24,9 @@ interface Pedido {
     modelo: string;
     cantidad: number;
     unidad: string;
+    materiales: string;
+    materiales_sueltos: number;
+    estado_stock: string;
   }[];
   estado: string;
   fecha_pedido: string;
@@ -35,6 +38,7 @@ interface Pedido {
   descuento: number;
   adelanto: number;
   total: number;
+  remitos: any[];
 }
 
 const ImportarPedido: React.FC = () => {
@@ -43,16 +47,14 @@ const ImportarPedido: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  const idVendedor = "6790061fce76c812a9cb0ce2"; // Id del vendedor (puedes parametrizar esto según el contexto)
+  const idVendedor = "6790061fce76c812a9cb0ce2";
 
-  // Cargar los datos del stock desde la API
   useEffect(() => {
     const fetchStock = async () => {
       try {
         const response = await axios.get<Stock[]>(
           `${API_BASE_URL}/stock/importacion/${idVendedor}`
         );
-        console.log(response);
         setStock(response.data);
       } catch (err) {
         console.error("Error al obtener el stock:", err);
@@ -79,52 +81,59 @@ const ImportarPedido: React.FC = () => {
           return;
         }
 
-        const pedidosImportados: any[] = data.map((row: any) => {
-          const detalle = row.Detalle?.trim(); // Eliminar espacios en blanco
+        const pedidosMap = new Map<string, Pedido>();
+
+        (data as any[]).forEach((row) => {
+          const remito = row.Remito;
+          const detalle = row.Detalle?.trim();
           const modeloEncontrado = stock.find(
             (item) => item.modelo.trim() === detalle
           );
-          console.log(modeloEncontrado);
 
-          if (!detalle) {
-            console.warn(`El campo 'Detalle' está vacío en la fila:`, row);
-          } else if (!modeloEncontrado) {
-            console.warn(`Modelo no encontrado para el detalle: ${detalle}`);
-          }
-
-          return {
-            remito: row.Remito || "",
-            vendedor_id: idVendedor,
-            cliente: {
-              nombre: row.Cliente || "",
-              direccion: row.Direccion || "",
-              contacto: row.Contacto || "",
-            },
-            productos: [
-              {
-                idStock: modeloEncontrado?._id || "",
-                idModelo: modeloEncontrado?.idModelo || "",
-                modelo: detalle || "",
-                cantidad: parseFloat(row.Cantidad) || 0,
-                unidad: "M2",
-                materiales: row.Materiales,
-              },
-            ],
-            estado: row.Estado || "pendiente",
-            fecha_pedido: row["Fecha Pedido"] || new Date().toISOString(),
-            fecha_entrega_estimada:
-              row["Fecha Entrega Estimada"] || new Date().toISOString(),
-            demora_calculada: parseInt(row["Demora Calculada"], 10) || 0,
-            metodo_pago: row["Método Pago"] || "efectivo",
-            procedencia: row.Procedencia || "local",
-            flete: parseFloat(row.Flete) || 0,
-            descuento: parseFloat(row.Descuento) || 0,
-            adelanto: parseFloat(row.Adelanto) || 0,
-            total: parseFloat(row.Total) || 0,
+          const producto = {
+            idStock: modeloEncontrado?._id || "",
+            idModelo: modeloEncontrado?.idModelo || "",
+            modelo: detalle || "",
+            cantidad: parseFloat(row.Cantidad.replace(",", ".")) || 0,
+            unidad: "M2",
+            materiales: row.Materiales || "",
+            materiales_sueltos: 0,
+            estado_stock:
+              row.Estado?.toLowerCase() === "entregado"
+                ? "entregado"
+                : "pendiente",
           };
+
+          if (pedidosMap.has(remito)) {
+            pedidosMap.get(remito)?.productos.push(producto);
+          } else {
+            pedidosMap.set(remito, {
+              remito: remito,
+              vendedor_id: idVendedor,
+              cliente: {
+                nombre: row.Cliente || "",
+                direccion: row.Direccion || "",
+                contacto: row.Contacto || "",
+              },
+              productos: [producto],
+              estado: row.Estado || "pendiente",
+              fecha_pedido: new Date(
+                Number(row.Fecha) * 86400000
+              ).toISOString(),
+              fecha_entrega_estimada: new Date().toISOString(),
+              demora_calculada: 0,
+              metodo_pago: row.Pago || "efectivo",
+              procedencia: row.Procedencia || "local",
+              flete: parseFloat(row.Flete) || 0,
+              descuento: parseFloat(row.Descuento) || 0,
+              adelanto: parseFloat(row.Seña || row.Adelanto) || 0,
+              total: parseFloat(row.Total) || 0,
+              remitos: [],
+            });
+          }
         });
 
-        setPedidos(pedidosImportados);
+        setPedidos(Array.from(pedidosMap.values()));
         setError(null);
       },
       error: (err) => {
@@ -145,10 +154,8 @@ const ImportarPedido: React.FC = () => {
 
       results.forEach((result, index) => {
         if (result.status === "fulfilled") {
-          // Pedido insertado correctamente
           exitosos.push(pedidos[index]);
         } else {
-          // Pedido fallido con el mensaje de error
           fallidos.push({
             pedido: pedidos[index],
             error: result.reason.response?.data?.message || "Error desconocido",
@@ -156,14 +163,13 @@ const ImportarPedido: React.FC = () => {
         }
       });
 
-      // Mostrar el estado de la operación
       setSuccess(`Se importaron ${exitosos.length} pedidos correctamente.`);
       setError(
         fallidos.length > 0
           ? `No se pudieron importar ${fallidos.length} pedidos.`
           : null
       );
-      setPedidos(fallidos.map((f) => f.pedido)); // Mantener solo los pedidos fallidos en la lista para corrección
+      setPedidos(fallidos.map((f) => f.pedido));
     } catch (error) {
       console.error("Error general al procesar los pedidos:", error);
       setError("Error al enviar los pedidos a la API. Intente nuevamente.");
@@ -174,7 +180,6 @@ const ImportarPedido: React.FC = () => {
     <div className="p-4">
       <h2 className="text-2xl font-bold mb-4">Importar Pedidos</h2>
 
-      {/* Input para cargar el archivo */}
       <div className="mb-4">
         <input
           type="file"
@@ -184,11 +189,9 @@ const ImportarPedido: React.FC = () => {
         />
       </div>
 
-      {/* Mostrar errores */}
       {error && <p className="text-red-500">{error}</p>}
       {success && <p className="text-green-500">{success}</p>}
 
-      {/* Tabla para mostrar los pedidos importados */}
       {pedidos.length > 0 && (
         <>
           <div className="overflow-x-auto">
@@ -197,8 +200,8 @@ const ImportarPedido: React.FC = () => {
                 <tr>
                   <th>Remito</th>
                   <th>Cliente</th>
-                  <th>Modelo</th>
-                  <th>Cantidad</th>
+                  <th>Modelo(s)</th>
+                  <th>Cantidad Total</th>
                   <th>Estado</th>
                 </tr>
               </thead>

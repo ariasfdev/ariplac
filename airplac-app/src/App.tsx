@@ -1,6 +1,11 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { AppProvider } from "./context/AppContext"; // Importa el AppProvider
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import { AppProvider } from "./context/AppContext";
 import Home from "./pages/Home";
 import Pedidos from "./pages/pedidos/Pedidos";
 import ImportarPedido from "./pages/pedidos/importarPedido";
@@ -13,6 +18,9 @@ const App: React.FC = () => {
     <AppProvider>
       <Router>
         <Routes>
+          {/* Redirecciona "/" a "/home/pedidos" */}
+          <Route path="/" element={<Navigate to="/home/pedidos" replace />} />
+
           <Route path="/home" element={<Home />}>
             <Route path="pedidos" element={<Pedidos />} />
             <Route path="pedidos/importar" element={<ImportarPedido />} />

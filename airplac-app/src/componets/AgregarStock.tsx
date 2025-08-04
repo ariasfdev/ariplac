@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { FaBox, FaUser } from "react-icons/fa";
 
 interface AgregarStockProps {
   isOpen: boolean;
@@ -13,8 +14,8 @@ const AgregarStock: React.FC<AgregarStockProps> = ({
   idStock,
   onSave,
 }) => {
-  const [cantidad, setCantidad] = useState<number>(0);
-  const [responsable, setResponsable] = useState<string>("");
+  const [cantidad, setCantidad] = useState<number | undefined>(undefined);
+  const [responsable, setResponsable] = useState<string>("Agustin Fernandez");
 
   const handleSave = () => {
     if (!cantidad || !responsable) {
@@ -33,21 +34,51 @@ const AgregarStock: React.FC<AgregarStockProps> = ({
         <h2 className="text-xl font-bold mb-4">Agregar Stock</h2>
         <div>
           <label className="block mb-2">Cantidad:</label>
-          <input
-            type="number"
-            className="input input-bordered w-full mb-4"
-            value={cantidad}
-            onChange={(e) => setCantidad(Number(e.target.value))}
-          />
+          <div className="relative mb-4">
+            <FaBox
+              className="
+                absolute 
+                left-3 
+                top-1/2 
+                transform -translate-y-1/2 
+                w-3 h-3 
+                text-gray-500 
+                pointer-events-none
+              "
+            />
+            <input
+              type="text"
+              className="input input-bordered w-full pl-10"
+              value={cantidad ? cantidad.toLocaleString("es-AR") : ""}
+              onChange={(e) => {
+                const value = e.target.value.replace(/[^\d]/g, "");
+                setCantidad(value === "" ? undefined : Number(value));
+              }}
+              placeholder="0"
+            />
+          </div>
         </div>
         <div>
           <label className="block mb-2">Responsable:</label>
-          <input
-            type="text"
-            className="input input-bordered w-full mb-4"
-            value={responsable}
-            onChange={(e) => setResponsable(e.target.value)}
-          />
+          <div className="relative mb-4">
+            <FaUser
+              className="
+                absolute 
+                left-3 
+                top-1/2 
+                transform -translate-y-1/2 
+                w-3 h-3 
+                text-gray-500 
+                pointer-events-none
+              "
+            />
+            <input
+              type="text"
+              className="input input-bordered w-full pl-10"
+              value={responsable}
+              onChange={(e) => setResponsable(e.target.value)}
+            />
+          </div>
         </div>
         <div className="flex justify-end gap-4">
           <button className="btn btn-secondary" onClick={onClose}>

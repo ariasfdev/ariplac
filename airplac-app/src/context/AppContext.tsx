@@ -4,6 +4,7 @@ import React, {
   useState,
   ReactNode,
   useEffect,
+  useCallback,
 } from "react";
 import axios from "axios";
 import { API_BASE_URL } from "../config";
@@ -42,15 +43,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
   const [error, setError] = useState<string | null>(null);
 
   // Función para obtener pedidos desde el backend
-  const fetchPedidos = async () => {
+  const fetchPedidos = useCallback(async () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/pedidos/`);
+      console.log(response.data);
       setPedidos(response.data);
     } catch (err) {
       console.error("Error al obtener los pedidos:", err);
       setError("No se pudieron cargar los pedidos.");
     }
-  };
+  }, []);
 
   // Función para agregar un pedido
   const addPedido = (nuevoPedido: Pedido) => {
@@ -60,7 +62,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
   // Llama a fetchPedidos al cargar el proveedor
   useEffect(() => {
     fetchPedidos();
-  }, []);
+  }, []); // Se ejecuta solo al montar el componente
 
   return (
     <AppContext.Provider
