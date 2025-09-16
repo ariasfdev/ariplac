@@ -13,6 +13,7 @@ interface NuevoPedidoProps {
   remito: number;
   editarPedido: boolean;
   pedido?: any;
+  tituloModal?: string;
 }
 
 interface Producto {
@@ -34,6 +35,7 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
   remito,
   editarPedido,
   pedido,
+  tituloModal,
 }) => {
   const { fetchPedidos } = useAppContext();
 
@@ -42,7 +44,9 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
   const [activeSection, setActiveSection] = useState<number>(0);
   const [activeTab, setActiveTab] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(false);
-  const [precios, setPrecios] = useState<any[]>([]);
+  // Cambiar a arrays por producto/tab
+  const [filtroTipoProductoPorProducto, setFiltroTipoProductoPorProducto] = useState<string[]>([""]);
+  const [preciosPorProducto, setPreciosPorProducto] = useState<any[][]>([[]]);
   const [productos, setProductos] = useState<Producto[]>([
     {
       idStock: "",
@@ -169,21 +173,55 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
 
   useEffect(() => {
     if (editarPedido && pedido) {
-      console.log("Pedido a editar:", pedido);
 
-      // ✅ Cargar datos del pedido en edición
+      const cargarPreciosProductos = async () => {
+        const productosConPrecios = await Promise.all(
+          pedido.productos.map(async (p: any) => {
+            let precio = 0;
+            let precioTarjeta = 0;
+            let id_precio = p.id_precio || "";
+            // Buscar precios por idModelo
+            const preciosModelo = await getPrecioByIdModelo(p.idModelo || p.idStock);
+            let precioSeleccionado = preciosModelo?.find((pr: any) => pr._id === id_precio);
+            if (precioSeleccionado) {
+              precio = precioSeleccionado.precio || 0;
+              precioTarjeta = precioSeleccionado.precioTarjeta || 0;
+            } else if (preciosModelo && preciosModelo.length > 0) {
+              // Si no hay coincidencia, usar el primero
+              precio = preciosModelo[0].precio || 0;
+              precioTarjeta = preciosModelo[0].precioTarjeta || 0;
+              id_precio = preciosModelo[0]._id || "";
+            }
+            return {
+              idStock: p.idStock || "",
+              idModelo: p.idModelo || "",
+              cantidad: p.cantidad || 0,
+              unidad: p.unidad || "",
+              materiales: p.materiales || "",
+              materiales_sueltos: p.materiales_sueltos || "",
+              estado_stock: p.estado_stock ,
+              precio,
+              precioTarjeta,
+              id_precio,
+              producto: p.producto || "", // <-- Agrega esto si no está
+            };
+          })
+        );
+        setProductos(productosConPrecios);
 
-      setProductos(
-        pedido.productos.map((p: any) => ({
-          idStock: p.idStock || "",
-          idModelo: p.idModelo || "",
-          cantidad: p.cantidad || 0,
-          unidad: p.unidad || "",
-          materiales: p.materiales || "",
-          materiales_sueltos: p.materiales_sueltos || "",
-          estado_stock: p.estado_stock || "pendiente",
-        }))
-      );
+        // Inicializar arrays por producto
+        setFiltroTipoProductoPorProducto(
+          productosConPrecios.map((p) => p.producto || "")
+        );
+        const preciosArray = await Promise.all(
+          productosConPrecios.map((p) =>
+            getPrecioByIdModelo(p.idModelo || p.idStock)
+          )
+        );
+        setPreciosPorProducto(preciosArray);
+      };
+
+      cargarPreciosProductos();
 
       setCliente({
         nombre: pedido.cliente || "",
@@ -346,8 +384,8 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
   };
 
   const handlePrecioChange = (index: number, precioId: string) => {
-    console.log("Precio seleccionado:", precioId);
-    const precioSeleccionado = precios.find((item) => item._id === precioId);
+    // Buscar el precio en el array correspondiente al producto/tab
+    const precioSeleccionado = preciosPorProducto[index]?.find((item) => item._id === precioId);
 
     if (precioSeleccionado) {
       const nuevosProductos = [...productos];
@@ -355,10 +393,9 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
         ...nuevosProductos[index],
         id_precio: precioId,
         precio: precioSeleccionado.precio || 0,
-        precioTarjeta: precioSeleccionado.precioTarjeta || 0, // También actualizar materiales para mantener compatibilidad
+        precioTarjeta: precioSeleccionado.precioTarjeta || 0,
       };
       setProductos(nuevosProductos);
-      console.log("Producto actualizado:", nuevosProductos[index]);
     }
   };
 
@@ -372,19 +409,32 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
     setOtrosDatos((prev) => ({ ...prev, [field]: value }));
   };
 
+  // Cargar precios del producto correspondiente al cambiar de tab
+  useEffect(() => {
+    const prod = productos[activeTab];
+    if (prod?.idModelo) {
+      getPrecioByIdModelo(prod.idModelo).then((precios) => {
+        setPreciosPorProducto((prev) => {
+          const copy = [...prev];
+          copy[activeTab] = precios;
+          return copy;
+        });
+      });
+    }
+  }, [productos, activeTab]);
+
   // Seleccionar un stock de la lista
   const handleStockSeleccionado = async (index: number, idStock: string) => {
-    console.log(idStock);
     const precio = await getPrecioByIdModelo(idStock);
-    console.log(precio);
-    setPrecios(precio);
+    setPreciosPorProducto((prev) => {
+      const copy = [...prev];
+      copy[index] = precio;
+      return copy;
+    });
     const productoSeleccionado = modeloData.find(
       (item) => item._id === idStock
     );
-
     if (productoSeleccionado) {
-      console.log(productoSeleccionado);
-
       const nuevosProductos = [...productos];
       nuevosProductos[index] = {
         ...nuevosProductos[index],
@@ -393,14 +443,29 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
         unidad: productoSeleccionado.unidad,
         pago: productoSeleccionado.pago || "",
         materiales: "",
-        id_precio: "", // Limpiar precio cuando se selecciona nuevo producto
+        id_precio: "",
         precio: 0,
         precioTarjeta: 0,
       };
-
       setProductos(nuevosProductos);
+
+      // Actualizar filtro tipo producto solo para este producto
+      setFiltroTipoProductoPorProducto((prev) => {
+        const copy = [...prev];
+        copy[index] = productoSeleccionado.producto || "";
+        return copy;
+      });
     }
   };
+  // Filtro tipo producto por producto/tab
+  const handleFiltroTipoProductoChange = (index: number, value: string) => {
+    setFiltroTipoProductoPorProducto((prev) => {
+      const copy = [...prev];
+      copy[index] = value;
+      return copy;
+    });
+  };
+
   const calcularTotal = () => {
     const subtotalProductos = productos.reduce((sum, prod) => {
       console.log(prod);
@@ -546,7 +611,13 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
     <>
       {/* Título y total en Desktop */}
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold text-base-content">Nuevo Pedido</h2>
+        <h2 className="text-xl font-bold text-base-content">
+          {tituloModal
+            ? tituloModal
+            : editarPedido
+            ? "Editar Pedido"
+            : "Nuevo Pedido"}
+        </h2>
         {/* Total en desktop (oculto en mobile) */}
         <p className="hidden sm:block text-xl font-bold text-base-content pr-10">
           Total: ${currentTotal}
@@ -651,14 +722,16 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
                 </label>
               </div>
 */}
-              {/* Filtro de tipo de producto */}
+              {/* Filtro de tipo de producto por producto/tab */}
               <label className="block mb-2 text-base-content">
                 Tipo de Producto
               </label>
               <select
                 className="select select-bordered w-full mb-4"
-                value={filtroTipoProducto}
-                onChange={(e) => setFiltroTipoProducto(e.target.value)}
+                value={filtroTipoProductoPorProducto[activeTab] || ""}
+                onChange={(e) =>
+                  handleFiltroTipoProductoChange(activeTab, e.target.value)
+                }
               >
                 <option value="">Todos los tipos</option>
                 <option value="PLACAS">PLACAS</option>
@@ -690,15 +763,13 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
                 </option>
                 {modeloData
                   .filter((producto) => {
-                    // Aplicar filtro de tipo de producto
+                    // Aplicar filtro de tipo de producto por producto/tab
                     if (
-                      filtroTipoProducto &&
-                      producto.producto !== filtroTipoProducto
+                      filtroTipoProductoPorProducto[activeTab] &&
+                      producto.producto !== filtroTipoProductoPorProducto[activeTab]
                     ) {
                       return false;
                     }
-
-                    // Permitir el producto actualmente seleccionado en este tab
                     if (productos[activeTab]?.idStock === producto._id) {
                       return true;
                     }
@@ -754,7 +825,7 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
                 <option value="" disabled>
                   Seleccione una opción
                 </option>
-                {precios.map((precio) => (
+                {preciosPorProducto[activeTab]?.map((precio) => (
                   <option key={precio._id} value={precio._id}>
                     {precio.nombre_precio}
                   </option>
