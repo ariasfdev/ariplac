@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import NuevoStock from "../componets/NuevoStock";
 import AgregarStock from "../componets/AgregarStock";
+import ModificarPrecio from "../componets/ModificarPrecio";
 import { MoreVertical } from "lucide-react";
 import { API_BASE_URL } from "../config";
 import SuccessModal from "../componets/SuccessModal";
@@ -29,21 +30,11 @@ interface Stock {
   stock: number;
   unidad: string;
   produccion_diaria: number;
-  valor: number;
-  promo1: number;
-  promo2: number;
-  promo3: number;
-  precio: number;
-  precio_promo1: number;
-  precio_promo2: number;
-  precio_promo3: number;
   stockActivo: boolean;
-  porcentaje_ganancia: number;
-  porcentaje_tarjeta: number;
-  total_redondeo: number;
   stock_reservado: StockReservado;
   metros_cuadrados: number;
   total_pendiente: number;
+  precio_base: number;
   total_pre_reserva: number;
 }
 
@@ -54,6 +45,7 @@ const Stock: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAgregarStockOpen, setIsAgregarStockOpen] = useState(false);
+  const [isModificarPrecioOpen, setIsModificarPrecioOpen] = useState(false);
   const [selectedStock, setSelectedStock] = useState<Stock | null>(null);
   const [modelos, setModelos] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -118,6 +110,12 @@ const Stock: React.FC = () => {
     setSelectedStock(stock);
     setIsAgregarStockOpen(true);
   };
+
+  const handleModificarPrecio = (stock: Stock) => {
+    setSelectedStock(stock);
+    setIsModificarPrecioOpen(true);
+  };
+
   const refrescarStock = async (stock: Stock) => {
     try {
       await axios.post(`${API_BASE_URL}/stock/refrescar`, stock);
@@ -164,6 +162,24 @@ const Stock: React.FC = () => {
       }
     } catch (err) {
       console.error("Error al agregar producción:", err);
+    }
+  };
+
+  const handleSavePrecio = async (payload: any) => {
+    try {
+      // El payload ahora contiene { precios: [...] }
+      await axios.put(
+        `${API_BASE_URL}/stock/precios/${selectedStock?.idModelo}`,
+        payload
+      );
+      setIsModificarPrecioOpen(false);
+      fetchStocks();
+      setSuccessMessage("Precios guardados exitosamente.");
+    } catch (err: any) {
+      console.error("Error al guardar los precios:", err);
+      if (err.response) {
+        console.error("Detalles del error:", err.response.data);
+      }
     }
   };
 
@@ -306,27 +322,6 @@ const Stock: React.FC = () => {
       >
         <li>
           <button
-            onClick={() => handleEdit(stock)}
-            className="flex items-center gap-2"
-          >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-              />
-            </svg>
-            Editar Stock
-          </button>
-        </li>
-        <li>
-          <button
             onClick={() => handleAgregarStock(stock)}
             className="flex items-center gap-2"
           >
@@ -344,6 +339,27 @@ const Stock: React.FC = () => {
               />
             </svg>
             Agregar Stock
+          </button>
+        </li>
+        <li>
+          <button
+            onClick={() => handleModificarPrecio(stock)}
+            className="flex items-center gap-2"
+          >
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+              />
+            </svg>
+            Modificar Precio
           </button>
         </li>
       </ul>
@@ -684,7 +700,7 @@ const Stock: React.FC = () => {
                     </th>
                     <th
                       className="text-xs font-medium uppercase tracking-wider cursor-pointer hover:bg-base-300 transition-colors duration-200"
-                      onClick={() => handleSort("precio_promo1")}
+                      onClick={() => handleSort("precio_base")}
                     >
                       <div className="flex items-center gap-2">
                         <svg
@@ -701,7 +717,7 @@ const Stock: React.FC = () => {
                           />
                         </svg>
                         Precio
-                        {sortConfig.key === "precio_promo1" && (
+                        {sortConfig.key === "precio_base" && (
                           <svg
                             className={`w-3 h-3 ${
                               sortConfig.direction === "asc" ? "rotate-180" : ""
@@ -1043,7 +1059,7 @@ const Stock: React.FC = () => {
                         <div className="flex items-center gap-1">
                           <span className="font-bold text-success">
                             $
-                            {(stock.promo1 || 0).toLocaleString("es-AR", {
+                            {(stock.precio_base || 0).toLocaleString("es-AR", {
                               minimumFractionDigits: 2,
                               maximumFractionDigits: 2,
                             })}
@@ -1131,19 +1147,19 @@ const Stock: React.FC = () => {
         </div>
       </div>
 
-      <NuevoStock
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        stock={selectedStock}
-        onSave={handleSave}
-        modelos={modelos}
-      />
-
       <AgregarStock
         isOpen={isAgregarStockOpen}
         onClose={() => setIsAgregarStockOpen(false)}
         idStock={selectedStock?._id || ""}
         onSave={handleGuardarProduccion}
+      />
+
+      <ModificarPrecio
+        isOpen={isModificarPrecioOpen}
+        onClose={() => setIsModificarPrecioOpen(false)}
+        precio={null}
+        onSave={handleSavePrecio}
+        modelo={selectedStock}
       />
     </div>
   );

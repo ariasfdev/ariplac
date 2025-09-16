@@ -114,8 +114,9 @@ const ModeloStockCreatedModal: React.FC<ModeloStockCreatedModalProps> = ({
               </h4>
               <p className="text-yellow-700 text-sm mb-3">
                 El stock se encuentra <strong>inactivo</strong> hasta que se
-                configuren los datos correspondientes. Es necesario establecer
-                los valores de costo, precios y configuración de ganancias.
+                agregue stock inicial y configuren los precios. Es necesario
+                establecer la cantidad inicial y los valores de costo, precios y
+                configuración de ganancias.
               </p>
               <div className="bg-white p-3 rounded border border-yellow-200">
                 <p className="text-xs text-yellow-600 font-medium">
@@ -140,14 +141,15 @@ const ModeloStockCreatedModal: React.FC<ModeloStockCreatedModalProps> = ({
           </button>
           <button className="btn btn-primary" onClick={onGoToStockConfig}>
             <FaCog className="w-4 h-4 mr-2" />
-            Configurar Stock
+            Agregar Stock y Configurar Precio
           </button>
         </div>
 
         {/* Información adicional */}
         <div className="mt-6 pt-4 border-t border-gray-200">
           <p className="text-xs text-gray-500 text-center">
-            Puedes configurar el stock más tarde desde la sección de Stock
+            Puedes agregar stock y configurar precios más tarde desde la sección
+            de Stock
           </p>
         </div>
       </div>

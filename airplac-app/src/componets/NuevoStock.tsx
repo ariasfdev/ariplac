@@ -169,12 +169,8 @@ const NuevoStock: React.FC<NuevoStockProps> = ({
       );
       return false;
     }
-    if (!formData.produccion_diaria || formData.produccion_diaria <= 0) {
-      setErrorMessage("La 'Producción Diaria' debe ser mayor a 0.");
-      return false;
-    }
 
-    // Todos los campos de costo son obligatorios y deben ser > 0
+    // Solo valor y promo1 son obligatorios y deben ser > 0
     if (!formData.valor || formData.valor <= 0) {
       setErrorMessage("El 'Valor' debe ser mayor a 0.");
       return false;
@@ -183,14 +179,8 @@ const NuevoStock: React.FC<NuevoStockProps> = ({
       setErrorMessage("El 'Valor promo1' debe ser mayor a 0.");
       return false;
     }
-    if (!formData.promo2 || formData.promo2 <= 0) {
-      setErrorMessage("El 'Valor promo2' debe ser mayor a 0.");
-      return false;
-    }
-    if (!formData.promo3 || formData.promo3 <= 0) {
-      setErrorMessage("El 'Valor promo3' debe ser mayor a 0.");
-      return false;
-    }
+    // Los campos promo2 y promo3 son opcionales, solo validar si están presentes
+
     // Los campos de porcentaje y redondeo son opcionales, solo validar si están presentes
     if (
       formData.porcentaje_ganancia !== undefined &&
@@ -199,8 +189,11 @@ const NuevoStock: React.FC<NuevoStockProps> = ({
       setErrorMessage("El 'Porcentaje ganancia' debe ser mayor a 0.");
       return false;
     }
-    if (formData.total_redondeo !== undefined && formData.total_redondeo <= 0) {
-      setErrorMessage("El 'Total redondeo' debe ser mayor a 0.");
+    if (
+      formData.porcentaje_tarjeta !== undefined &&
+      formData.porcentaje_tarjeta <= 0
+    ) {
+      setErrorMessage("El 'Porcentaje tarjeta' debe ser mayor a 0.");
       return false;
     }
 

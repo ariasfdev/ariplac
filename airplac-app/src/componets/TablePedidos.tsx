@@ -222,10 +222,11 @@ const TableHeader: React.FC<{
   ocultarEntregados,
   onOcultarEntregadosChange,
 }) => (
-  <div className="bg-gradient-to-r from-primary to-primary-focus px-6 py-4 flex justify-between items-center">
-    <h2 className="text-primary-content text-xl font-semibold flex items-center gap-2">
+  <div className="bg-gradient-to-r from-primary to-primary-focus px-3 sm:px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    {/* Título - oculto en mobile */}
+    <h2 className="text-primary-content text-lg sm:text-xl font-semibold flex items-center gap-2 hidden sm:flex">
       <svg
-        className="w-6 h-6"
+        className="w-5 h-5 sm:w-6 sm:h-6"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
@@ -239,24 +240,16 @@ const TableHeader: React.FC<{
       </svg>
       Gestión de Pedidos
     </h2>
-    <div className="flex items-center gap-4">
-      <div className="flex items-center gap-2">
-        <label className="flex items-center gap-2 text-primary-content text-sm">
-          <input
-            type="checkbox"
-            className="checkbox checkbox-sm"
-            checked={ocultarEntregados}
-            onChange={(e) => onOcultarEntregadosChange(e.target.checked)}
-          />
-          Ocultar entregados
-        </label>
-      </div>
-      <div className="join">
+
+    {/* Contenedor de controles - organizado en filas separadas en mobile */}
+    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 w-full sm:w-auto">
+      {/* Fila 1: Buscador */}
+      <div className="join w-full sm:w-auto">
         <input
           onChange={onSearchChange}
           type="text"
-          className="input input-bordered join-item w-64"
-          placeholder="Buscar por remito, cliente, detalle..."
+          className="input input-bordered join-item w-full sm:w-64"
+          placeholder="Buscar..."
           value={searchQuery}
         />
         {searchQuery && (
@@ -280,8 +273,45 @@ const TableHeader: React.FC<{
           </button>
         )}
       </div>
-      <div className="dropdown dropdown-end">
-        <button tabIndex={0} className="btn btn-outline btn-sm">
+
+      {/* Fila 2: Filtro de columnas y botón nuevo pedido */}
+      <div className="flex items-center gap-2 w-full sm:w-auto">
+        <div className="dropdown dropdown-end">
+          <button tabIndex={0} className="btn btn-outline btn-sm">
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+              />
+            </svg>
+            <span className="hidden sm:inline">Columnas</span>
+          </button>
+          <ul
+            tabIndex={0}
+            className="dropdown-content menu p-2 shadow bg-base-200 rounded-box w-48 sm:w-52 z-[9999]"
+          >
+            {visibleColumns.map((col) => (
+              <li key={col.key}>
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={col.visible}
+                    onChange={() => onToggleColumn(col.key)}
+                  />
+                  {col.label}
+                </label>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <button className="btn btn-primary btn-sm" onClick={onNuevoPedido}>
           <svg
             className="w-4 h-4"
             fill="none"
@@ -292,45 +322,27 @@ const TableHeader: React.FC<{
               strokeLinecap="round"
               strokeLinejoin="round"
               strokeWidth={2}
-              d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+              d="M12 6v6m0 0v6m0-6h6m-6 0H6"
             />
           </svg>
-          Columnas
+          <span className="hidden sm:inline">Nuevo Pedido</span>
+          <span className="sm:hidden">Nuevo</span>
         </button>
-        <ul
-          tabIndex={0}
-          className="dropdown-content menu p-2 shadow bg-base-200 rounded-box w-52 z-50"
-        >
-          {visibleColumns.map((col) => (
-            <li key={col.key}>
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={col.visible}
-                  onChange={() => onToggleColumn(col.key)}
-                />
-                {col.label}
-              </label>
-            </li>
-          ))}
-        </ul>
       </div>
-      <button className="btn btn-primary btn-sm" onClick={onNuevoPedido}>
-        <svg
-          className="w-4 h-4"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+
+      {/* Fila 3: Filtro ocultar entregados */}
+      <div className="flex items-center gap-2 w-full sm:w-auto">
+        <label className="flex items-center gap-2 text-primary-content text-sm">
+          <input
+            type="checkbox"
+            className="checkbox checkbox-xs sm:checkbox-sm"
+            checked={ocultarEntregados}
+            onChange={(e) => onOcultarEntregadosChange(e.target.checked)}
           />
-        </svg>
-        Nuevo Pedido
-      </button>
+          <span className="hidden sm:inline">Ocultar entregados</span>
+          <span className="sm:hidden">Sin entregados</span>
+        </label>
+      </div>
     </div>
   </div>
 );

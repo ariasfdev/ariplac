@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import NuevoModelo from "../componets/NuevoModelo";
-import NuevoStock from "../componets/NuevoStock";
+import AgregarStock from "../componets/AgregarStock";
+import ModificarPrecio from "../componets/ModificarPrecio";
 import ModeloStockCreatedModal from "../componets/ModeloStockCreatedModal";
 import { API_BASE_URL } from "../config";
 
@@ -42,6 +43,7 @@ interface BackendResponse {
   message: string;
   modelo: Modelo;
   stock: Stock;
+  precio: any;
 }
 
 const Modelos = () => {
@@ -56,10 +58,21 @@ const Modelos = () => {
   const [showCreatedModal, setShowCreatedModal] = useState(false);
   const [createdModelo, setCreatedModelo] = useState<Modelo | null>(null);
   const [createdStock, setCreatedStock] = useState<Stock | null>(null);
+  const [createdPrecio, setCreatedPrecio] = useState<any>(null);
 
   // Estados para el modal de configuración de stock
   const [isStockModalOpen, setIsStockModalOpen] = useState(false);
   const [selectedStockForEdit, setSelectedStockForEdit] =
+    useState<Stock | null>(null);
+
+  // Estados para el modal de agregar stock
+  const [isAgregarStockOpen, setIsAgregarStockOpen] = useState(false);
+  const [selectedStockForAgregar, setSelectedStockForAgregar] =
+    useState<Stock | null>(null);
+
+  // Estados para el modal de modificar precio
+  const [isModificarPrecioOpen, setIsModificarPrecioOpen] = useState(false);
+  const [selectedStockForPrecio, setSelectedStockForPrecio] =
     useState<Stock | null>(null);
 
   useEffect(() => {
@@ -117,6 +130,7 @@ const Modelos = () => {
         console.log(response.data);
         setCreatedModelo(response.data.modelo);
         setCreatedStock(response.data.stock);
+        setCreatedPrecio(response.data.precio);
 
         // Cerrar modal de creación
         setIsModalOpen(false);
@@ -139,10 +153,10 @@ const Modelos = () => {
     // Cerrar modal de confirmación
     setShowCreatedModal(false);
 
-    // Abrir modal de configuración de stock con el stock creado
+    // Abrir modal de agregar stock con el stock creado
     if (createdStock) {
-      setSelectedStockForEdit(createdStock);
-      setIsStockModalOpen(true);
+      setSelectedStockForAgregar(createdStock);
+      setIsAgregarStockOpen(true);
     }
   };
 
@@ -150,23 +164,52 @@ const Modelos = () => {
     setShowCreatedModal(false);
     setCreatedModelo(null);
     setCreatedStock(null);
+    setCreatedPrecio(null);
   };
 
-  const handleStockSave = async (stock: Stock) => {
+  const handleAgregarStock = async (cantidad: number, responsable: string) => {
     try {
-      if (stock._id) {
-        await axios.put(`${API_BASE_URL}/productos/stock/${stock._id}`, stock);
-      } else {
-        await axios.post(`${API_BASE_URL}/productos/stock/`, stock);
+      if (selectedStockForAgregar) {
+        await axios.post(`${API_BASE_URL}/stock/actualizar-stock`, {
+          idStock: selectedStockForAgregar._id,
+          cantidad,
+          responsable,
+        });
+
+        setIsAgregarStockOpen(false);
+        setSelectedStockForAgregar(null);
+
+        // Después de agregar stock, abrir modal de modificar precio
+        if (createdStock) {
+          setSelectedStockForPrecio(createdStock);
+          setIsModificarPrecioOpen(true);
+        }
       }
-
-      setIsStockModalOpen(false);
-      setSelectedStockForEdit(null);
-
-      // Mostrar mensaje de éxito
-      console.log("Stock configurado exitosamente");
     } catch (err) {
-      console.error("Error al guardar el stock:", err);
+      console.error("Error al agregar stock:", err);
+    }
+  };
+
+  const handleSavePrecio = async (payload: any) => {
+    try {
+      // El payload ahora contiene { precios: [...] }
+      await axios.put(
+        `${API_BASE_URL}/stock/precios/${selectedStockForPrecio?.idModelo}`,
+        payload
+      );
+      setIsModificarPrecioOpen(false);
+      setSelectedStockForPrecio(null);
+
+      // Refrescar lista de modelos
+      const response = await axios.get(`${API_BASE_URL}/modelos/`);
+      setModelos(response.data);
+
+      console.log("Precios guardados exitosamente");
+    } catch (err: any) {
+      console.error("Error al guardar los precios:", err);
+      if (err.response) {
+        console.error("Detalles del error:", err.response.data);
+      }
     }
   };
 
@@ -483,13 +526,21 @@ const Modelos = () => {
         onSave={handleSave}
       />
 
-      {/* Modal de configuración de stock */}
-      <NuevoStock
-        isOpen={isStockModalOpen}
-        onClose={() => setIsStockModalOpen(false)}
-        stock={selectedStockForEdit}
-        onSave={handleStockSave}
-        modelos={modelos}
+      {/* Modal de agregar stock */}
+      <AgregarStock
+        isOpen={isAgregarStockOpen}
+        onClose={() => setIsAgregarStockOpen(false)}
+        idStock={selectedStockForAgregar?._id || ""}
+        onSave={handleAgregarStock}
+      />
+
+      {/* Modal de modificar precio */}
+      <ModificarPrecio
+        isOpen={isModificarPrecioOpen}
+        onClose={() => setIsModificarPrecioOpen(false)}
+        precio={null}
+        onSave={handleSavePrecio}
+        modelo={selectedStockForPrecio}
       />
 
       {/* Modal de confirmación de creación */}

@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { FaShoppingCart } from "react-icons/fa";
+import { FaShoppingCart, FaDollarSign, FaPercent } from "react-icons/fa";
 import { IoCloseCircle } from "react-icons/io5";
 import { useAppContext } from "../context/AppContext";
 import { API_BASE_URL } from "../config";
+import { getModelos, getPrecioByIdModelo } from "../services/pedidos.service";
 import ErrorModal from "./ErrorModal";
 
 interface NuevoPedidoProps {
@@ -21,18 +22,10 @@ interface Producto {
   unidad: string;
   materiales: string;
   materiales_sueltos?: number;
-  valor: number;
-  promo1: number;
-  promo2: number;
-  promo3: number;
-  precio: number;
-  precio_promo1: number;
-  precio_promo2: number;
-  precio_promo3: number;
-  porcentaje_ganancia: number;
-  porcentaje_tarjeta: number;
-  total_redondeo: number;
   pago: string;
+  id_precio: string;
+  precio: number;
+  precioTarjeta: number;
 }
 
 const NuevoPedido: React.FC<NuevoPedidoProps> = ({
@@ -45,10 +38,11 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
   const { fetchPedidos } = useAppContext();
 
   const [stockData, setStockData] = useState<any[]>([]);
+  const [modeloData, setModeloData] = useState<any[]>([]);
   const [activeSection, setActiveSection] = useState<number>(0);
   const [activeTab, setActiveTab] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(false);
-
+  const [precios, setPrecios] = useState<any[]>([]);
   const [productos, setProductos] = useState<Producto[]>([
     {
       idStock: "",
@@ -56,18 +50,10 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
       cantidad: 0,
       unidad: "",
       materiales: "",
-      valor: 0,
-      promo1: 0,
-      promo2: 0,
-      promo3: 0,
-      precio: 0,
-      precio_promo1: 0,
-      precio_promo2: 0,
-      precio_promo3: 0,
-      porcentaje_ganancia: 0,
-      porcentaje_tarjeta: 0,
-      total_redondeo: 0,
       pago: "",
+      id_precio: "",
+      precio: 0,
+      precioTarjeta: 0,
     },
   ]);
 
@@ -85,6 +71,7 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
     procedencia: "",
     flete: 0,
     descuento: 0, // de 1 a 100
+    adicional: 0, // monto adicional al total
     adelanto: 0,
     total: 0,
     valor_instalacion: 0,
@@ -95,6 +82,8 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
   const [incluyeInstalacion, setIncluyeInstalacion] = useState(false);
   // Estado para el checkbox de "Pago el total"
   const [pagoTotal, setPagoTotal] = useState(false);
+  // Estado para el filtro de tipo de producto
+  const [filtroTipoProducto, setFiltroTipoProducto] = useState<string>("");
   const [productosModificados, setProductosModificados] = useState<{
     agregados: Producto[];
     modificados_cantidad: {
@@ -127,6 +116,11 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
       }
     };
     fetchStockData();
+    const fetchModeloData = async () => {
+      const response = await getModelos();
+      setModeloData(response);
+    };
+    fetchModeloData();
   }, []);
 
   /**
@@ -145,18 +139,10 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
           cantidad: 0,
           unidad: "",
           materiales: "",
-          valor: 0,
-          promo1: 0,
-          promo2: 0,
-          promo3: 0,
-          precio: 0,
-          precio_promo1: 0,
-          precio_promo2: 0,
-          precio_promo3: 0,
-          porcentaje_ganancia: 0,
-          porcentaje_tarjeta: 0,
-          total_redondeo: 0,
           pago: "",
+          id_precio: "",
+          precio: 0,
+          precioTarjeta: 0,
         },
       ]);
       setCliente({
@@ -172,6 +158,7 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
         procedencia: "",
         flete: 0,
         descuento: 0,
+        adicional: 0,
         adelanto: 0,
         total: 0,
         valor_instalacion: 0,
@@ -194,17 +181,6 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
           unidad: p.unidad || "",
           materiales: p.materiales || "",
           materiales_sueltos: p.materiales_sueltos || "",
-          valor: p.valor || 0,
-          promo1: p.promo1 || 0,
-          promo2: p.promo2 || 0,
-          promo3: p.promo3 || 0,
-          precio: p.precio || 0,
-          precio_promo1: p.precio_promo1 || 0,
-          precio_promo2: p.precio_promo2 || 0,
-          precio_promo3: p.precio_promo3 || 0,
-          porcentaje_ganancia: p.porcentaje_ganancia || 0,
-          porcentaje_tarjeta: p.porcentaje_tarjeta || 0,
-          total_redondeo: p.total_redondeo || 0,
           estado_stock: p.estado_stock || "pendiente",
         }))
       );
@@ -214,7 +190,7 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
         direccion: pedido.direccion || "",
         contacto: pedido.contacto || "",
       });
-
+      console.log(pedido.seña);
       setOtrosDatos({
         estado: pedido.estado || "",
         fecha_pedido: pedido.fecha || "",
@@ -222,12 +198,14 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
         metodo_pago: pedido.pago || "",
         procedencia: pedido.procedencia || "",
         flete: pedido.flete || 0,
-        descuento: Number(pedido.descuento) || 0,
-        adelanto: Number(pedido.seña) || 0,
-        total: Number(pedido.total) || 0,
-        valor_instalacion: Number(pedido.valor_instalacion) || 0,
+        descuento: pedido.descuento || 0,
+        adicional: pedido.adicional || 0,
+        adelanto: pedido.seña || 0,
+        total: pedido.total || 0,
+        valor_instalacion: pedido.valor_instalacion || 0,
       });
       setIncluyeInstalacion((pedido.valor_instalacion || 0) > 0);
+      //setFiltroTipoProducto(pedido.productos[0].producto || "");
     } else {
       setProductos([
         {
@@ -236,18 +214,10 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
           cantidad: 0,
           unidad: "",
           materiales: "",
-          valor: 0,
-          promo1: 0,
-          promo2: 0,
-          promo3: 0,
-          precio: 0,
-          precio_promo1: 0,
-          precio_promo2: 0,
-          precio_promo3: 0,
-          porcentaje_ganancia: 0,
-          porcentaje_tarjeta: 0,
-          total_redondeo: 0,
           pago: "",
+          id_precio: "",
+          precio: 0,
+          precioTarjeta: 0,
         },
       ]);
 
@@ -265,6 +235,7 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
         procedencia: "",
         flete: 0,
         descuento: 0,
+        adicional: 0,
         adelanto: 0,
         total: 0,
         valor_instalacion: 0,
@@ -277,10 +248,10 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
 
   // ✅ Nuevo useEffect para cargar datos del stock cuando se está en modo edición
   useEffect(() => {
-    if (editarPedido && pedido && stockData.length > 0) {
+    if (editarPedido && pedido && modeloData.length > 0) {
       const productosActualizados = productos.map((producto) => {
         if (producto.idStock) {
-          const stockSeleccionado = stockData.find(
+          const stockSeleccionado = modeloData.find(
             (item) => item._id === producto.idStock
           );
           if (stockSeleccionado) {
@@ -288,17 +259,6 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
               ...producto,
               idModelo: stockSeleccionado.idModelo,
               unidad: stockSeleccionado.unidad,
-              valor: stockSeleccionado.valor || 0,
-              promo1: stockSeleccionado.promo1 || 0,
-              promo2: stockSeleccionado.promo2 || 0,
-              promo3: stockSeleccionado.promo3 || 0,
-              precio: stockSeleccionado.precio || 0,
-              precio_promo1: stockSeleccionado.precio_promo1 || 0,
-              precio_promo2: stockSeleccionado.precio_promo2 || 0,
-              precio_promo3: stockSeleccionado.precio_promo3 || 0,
-              porcentaje_ganancia: stockSeleccionado.porcentaje_ganancia || 0,
-              porcentaje_tarjeta: stockSeleccionado.porcentaje_tarjeta || 0,
-              total_redondeo: stockSeleccionado.total_redondeo || 0,
               pago: stockSeleccionado.pago || "",
             };
           }
@@ -310,7 +270,7 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
         setProductos(productosActualizados);
       }
     }
-  }, [editarPedido, pedido, stockData, productos]);
+  }, [editarPedido, pedido, modeloData, productos]);
 
   useEffect(() => {
     const totalFormateado: any = new Intl.NumberFormat("es-AR", {
@@ -324,14 +284,13 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
   useEffect(() => {
     if (pagoTotal) {
       handleOtrosDatosChange("adelanto", calcularTotal());
-    } else {
-      handleOtrosDatosChange("adelanto", 0);
     }
     // Se actualiza cuando cambian los productos o datos que afectan el total
   }, [
     productos,
     otrosDatos.flete,
     otrosDatos.descuento,
+    otrosDatos.adicional,
     otrosDatos.valor_instalacion,
     pagoTotal,
   ]);
@@ -346,18 +305,10 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
         cantidad: 0,
         unidad: "",
         materiales: "",
-        valor: 0,
-        promo1: 0,
-        promo2: 0,
-        promo3: 0,
-        precio: 0,
-        precio_promo1: 0,
-        precio_promo2: 0,
-        precio_promo3: 0,
-        porcentaje_ganancia: 0,
-        porcentaje_tarjeta: 0,
-        total_redondeo: 0,
         pago: "",
+        id_precio: "",
+        precio: 0,
+        precioTarjeta: 0,
       },
     ]);
     setActiveTab(productos.length);
@@ -394,6 +345,23 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
     setProductos(nuevosProductos);
   };
 
+  const handlePrecioChange = (index: number, precioId: string) => {
+    console.log("Precio seleccionado:", precioId);
+    const precioSeleccionado = precios.find((item) => item._id === precioId);
+
+    if (precioSeleccionado) {
+      const nuevosProductos = [...productos];
+      nuevosProductos[index] = {
+        ...nuevosProductos[index],
+        id_precio: precioId,
+        precio: precioSeleccionado.precio || 0,
+        precioTarjeta: precioSeleccionado.precioTarjeta || 0, // También actualizar materiales para mantener compatibilidad
+      };
+      setProductos(nuevosProductos);
+      console.log("Producto actualizado:", nuevosProductos[index]);
+    }
+  };
+
   // Cambios en cliente
   const handleClienteChange = (field: string, value: string) => {
     setCliente((prev) => ({ ...prev, [field]: value }));
@@ -405,49 +373,48 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
   };
 
   // Seleccionar un stock de la lista
-  const handleStockSeleccionado = (index: number, idStock: string) => {
-    const productoSeleccionado = stockData.find((item) => item._id === idStock);
+  const handleStockSeleccionado = async (index: number, idStock: string) => {
+    console.log(idStock);
+    const precio = await getPrecioByIdModelo(idStock);
+    console.log(precio);
+    setPrecios(precio);
+    const productoSeleccionado = modeloData.find(
+      (item) => item._id === idStock
+    );
+
     if (productoSeleccionado) {
       console.log(productoSeleccionado);
+
       const nuevosProductos = [...productos];
       nuevosProductos[index] = {
         ...nuevosProductos[index],
-        idStock: productoSeleccionado._id,
-        idModelo: productoSeleccionado.idModelo,
+        idStock: productoSeleccionado.idStock,
+        idModelo: productoSeleccionado._id,
         unidad: productoSeleccionado.unidad,
-        // Ponemos los valores de precio disponibles
-        valor: productoSeleccionado.valor || 0,
-        promo1: productoSeleccionado.promo1 || 0,
-        promo2: productoSeleccionado.promo2 || 0,
-        promo3: productoSeleccionado.promo3 || 0,
-        precio: productoSeleccionado.precio || 0,
-        precio_promo1: productoSeleccionado.precio_promo1 || 0,
-        precio_promo2: productoSeleccionado.precio_promo2 || 0,
-        precio_promo3: productoSeleccionado.precio_promo3 || 0,
-        porcentaje_ganancia: productoSeleccionado.porcentaje_ganancia || 0,
-        porcentaje_tarjeta: productoSeleccionado.porcentaje_tarjeta || 0,
-        total_redondeo: productoSeleccionado.total_redondeo || 0,
         pago: productoSeleccionado.pago || "",
-        // Por defecto materiales = "" (o lo que corresponda)
         materiales: "",
+        id_precio: "", // Limpiar precio cuando se selecciona nuevo producto
+        precio: 0,
+        precioTarjeta: 0,
       };
+
       setProductos(nuevosProductos);
     }
   };
   const calcularTotal = () => {
     const subtotalProductos = productos.reduce((sum, prod) => {
       console.log(prod);
-      let valorBase = prod.precio;
+      let valorBase = prod.precio || 0;
       if (prod.materiales === "promo1") {
-        valorBase = prod.precio_promo1 || 0;
+        valorBase = prod.precio || 0;
       } else if (prod.materiales === "promo2") {
-        valorBase = prod.precio_promo3 || 0;
+        valorBase = prod.precio || 0;
       } else if (prod.materiales === "promo3") {
-        valorBase = prod.precio_promo3 || 0;
+        valorBase = prod.precio || 0;
       }
 
       if (otrosDatos.metodo_pago === "credito") {
-        valorBase += valorBase * (prod.porcentaje_tarjeta / 100);
+        valorBase += valorBase * ((prod.precioTarjeta || 0) / 100);
       }
 
       return sum + prod.cantidad * valorBase;
@@ -468,7 +435,10 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
       return sum + (prod.materiales_sueltos ? prod.materiales_sueltos : 0);
     }, 0);
 
-    totalFinal += totalMaterialesSueltos + (otrosDatos.valor_instalacion || 0);
+    totalFinal +=
+      totalMaterialesSueltos +
+      (otrosDatos.valor_instalacion || 0) +
+      (otrosDatos.adicional || 0);
 
     return parseFloat((totalFinal > 0 ? totalFinal : 0).toFixed(2));
   };
@@ -484,7 +454,7 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
 
     for (let i = 0; i < productos.length; i++) {
       const p = productos[i];
-      if (!p.idStock || p.cantidad <= 0 || !p.unidad.trim() || !p.materiales) {
+      if (!p.idStock || p.cantidad <= 0 || !p.id_precio) {
         setErrorMessage(
           `Por favor, completa todos los campos obligatorios del producto ${
             i + 1
@@ -529,6 +499,7 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
         procedencia: otrosDatos.procedencia,
         flete: Number(otrosDatos.flete) || 0,
         descuento: Number(otrosDatos.descuento) || 0,
+        adicional: Number(otrosDatos.adicional) || 0,
         adelanto: Number(otrosDatos.adelanto) || 0,
         total: totalEnviado,
         valor_instalacion: Number(otrosDatos.valor_instalacion) || 0,
@@ -549,6 +520,7 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
         console.log("Pedido actualizado con éxito:", response.data);
       } else {
         // Nuevo pedido: SE incluye remito y fecha_pedido
+        console.log(data);
         data = {
           ...data,
           remito,
@@ -659,7 +631,8 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
 
           {productos.length > 0 ? (
             <div className="border rounded bg-base-200 p-4">
-              {/* Checkbox de instalación */}
+              {/* Checkbox de instalación 
+
               <div className="form-control">
                 <label className="label cursor-pointer">
                   <span className="label-text">¿Incluye instalación?</span>
@@ -677,6 +650,31 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
                   />
                 </label>
               </div>
+*/}
+              {/* Filtro de tipo de producto */}
+              <label className="block mb-2 text-base-content">
+                Tipo de Producto
+              </label>
+              <select
+                className="select select-bordered w-full mb-4"
+                value={filtroTipoProducto}
+                onChange={(e) => setFiltroTipoProducto(e.target.value)}
+              >
+                <option value="">Todos los tipos</option>
+                <option value="PLACAS">PLACAS</option>
+                <option value="WPC">WPC</option>
+                <option value="SIMIL_MARMOL">SIMIL_MARMOL</option>
+                <option value="ZOCALOS_PVC">ZOCALOS_PVC</option>
+                <option value="PVC_BLANCO">PVC_BLANCO</option>
+                <option value="PVC_COLOR">PVC_COLOR</option>
+                <option value="PVC_PERFIL">PVC_PERFIL</option>
+                <option value="MATERIAL">MATERIAL</option>
+                <option value="INSTALACION">INSTALACION</option>
+                <option value="TELGOPOR">TELGOPOR</option>
+                <option value="PERFIL_GALVANIZADO">PERFIL_GALVANIZADO</option>
+                <option value="WPC_EXTERIOR">WPC_EXTERIOR</option>
+              </select>
+
               <label className="block mb-2 text-base-content">
                 Seleccionar Producto
               </label>
@@ -690,8 +688,16 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
                 <option value="" disabled>
                   Seleccionar producto
                 </option>
-                {stockData
+                {modeloData
                   .filter((producto) => {
+                    // Aplicar filtro de tipo de producto
+                    if (
+                      filtroTipoProducto &&
+                      producto.producto !== filtroTipoProducto
+                    ) {
+                      return false;
+                    }
+
                     // Permitir el producto actualmente seleccionado en este tab
                     if (productos[activeTab]?.idStock === producto._id) {
                       return true;
@@ -739,65 +745,58 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
                 }
               />
 
-              <label className="block mb-2 text-base-content">Materiales</label>
+              <label className="block mb-2 text-base-content">Precio</label>
               <select
                 className="select select-bordered w-full"
-                value={productos[activeTab]?.materiales || ""}
-                onChange={(e) =>
-                  handleProductoChange(activeTab, "materiales", e.target.value)
-                }
-                disabled={
-                  productos[activeTab]?.cantidad > 0 &&
-                  productos[activeTab]?.cantidad < 10
-                }
+                value={productos[activeTab]?.id_precio || ""}
+                onChange={(e) => handlePrecioChange(activeTab, e.target.value)}
               >
                 <option value="" disabled>
                   Seleccione una opción
                 </option>
-                <option value="sinpromo">sin promo</option>
-                <option value="promo1">promo1</option>
-                <option value="promo2">promo2</option>
-                <option value="promo3">promo3</option>
+                {precios.map((precio) => (
+                  <option key={precio._id} value={precio._id}>
+                    {precio.nombre_precio}
+                  </option>
+                ))}
               </select>
-
-              {productos[activeTab]?.cantidad > 0 &&
-                productos[activeTab]?.cantidad < 10 && (
-                  <>
-                    <label className="block mt-4 mb-2 text-base-content">
-                      Materiales Sueltos
-                    </label>
-                    <input
-                      type="number"
-                      className="input input-bordered w-full"
-                      placeholder="Materiales sueltos"
-                      value={productos[activeTab]?.materiales_sueltos || ""}
-                      onChange={(e) =>
-                        handleProductoChange(
-                          activeTab,
-                          "materiales_sueltos",
-                          Number(e.target.value)
-                        )
-                      }
-                    />
-                  </>
-                )}
               {incluyeInstalacion && (
                 <div className="mt-4">
                   <label className="block mb-2 text-base-content">
                     Total por instalación
                   </label>
-                  <input
-                    type="number"
-                    className="input input-bordered w-full"
-                    placeholder="Ej: 10000"
-                    value={otrosDatos.valor_instalacion || ""}
-                    onChange={(e) =>
-                      handleOtrosDatosChange(
-                        "valor_instalacion",
-                        Number(e.target.value)
-                      )
-                    }
-                  />
+                  <div className="relative mb-4">
+                    <FaDollarSign
+                      className="
+                        absolute 
+                        left-3 
+                        top-1/2 
+                        transform -translate-y-1/2 
+                        w-4 h-4 
+                        text-gray-500 
+                        pointer-events-none
+                      "
+                    />
+                    <input
+                      type="text"
+                      className="input input-bordered w-full pl-10"
+                      value={
+                        otrosDatos.valor_instalacion
+                          ? `$${otrosDatos.valor_instalacion.toLocaleString(
+                              "es-AR"
+                            )}`
+                          : ""
+                      }
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/[^\d]/g, "");
+                        handleOtrosDatosChange(
+                          "valor_instalacion",
+                          value === "" ? 0 : Number(value)
+                        );
+                      }}
+                      placeholder="0"
+                    />
+                  </div>
                 </div>
               )}
             </div>
@@ -842,34 +841,129 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
       {activeSection === 2 && (
         <div className="border rounded bg-base-200 p-4">
           <label className="block mb-2 text-base-content">Flete</label>
-          <input
-            type="number"
-            className="input input-bordered w-full mb-2"
-            value={otrosDatos.flete}
-            onChange={(e) =>
-              handleOtrosDatosChange("flete", Number(e.target.value))
-            }
-          />
+          <div className="relative mb-4">
+            <FaDollarSign
+              className="
+                absolute 
+                left-3 
+                top-1/2 
+                transform -translate-y-1/2 
+                w-4 h-4 
+                text-gray-500 
+                pointer-events-none
+              "
+            />
+            <input
+              type="text"
+              className="input input-bordered w-full pl-10"
+              value={
+                otrosDatos.flete
+                  ? `$${otrosDatos.flete.toLocaleString("es-AR")}`
+                  : ""
+              }
+              onChange={(e) => {
+                const value = e.target.value.replace(/[^\d]/g, "");
+                handleOtrosDatosChange(
+                  "flete",
+                  value === "" ? 0 : Number(value)
+                );
+              }}
+              placeholder="0"
+            />
+          </div>
 
           <label className="block mb-2 text-base-content">Descuento (%)</label>
-          <input
-            type="number"
-            className="input input-bordered w-full mb-2"
-            value={otrosDatos.descuento}
-            onChange={(e) =>
-              handleOtrosDatosChange("descuento", Number(e.target.value))
-            }
-          />
+          <div className="relative mb-4">
+            <FaPercent
+              className="
+                absolute 
+                left-3 
+                top-1/2 
+                transform -translate-y-1/2 
+                w-3 h-3 
+                text-gray-500 
+                pointer-events-none
+              "
+            />
+            <input
+              type="text"
+              className="input input-bordered w-full pl-10"
+              disabled
+              value={otrosDatos.descuento ? `${otrosDatos.descuento}` : ""}
+              onChange={(e) => {
+                const value = e.target.value.replace(/[^\d]/g, "");
+                handleOtrosDatosChange(
+                  "descuento",
+                  value === "" ? 0 : Number(value)
+                );
+              }}
+              placeholder="0"
+            />
+          </div>
+
+          <label className="block mb-2 text-base-content">Adicional</label>
+          <div className="relative mb-4">
+            <FaDollarSign
+              className="
+                absolute 
+                left-3 
+                top-1/2 
+                transform -translate-y-1/2 
+                w-4 h-4 
+                text-gray-500 
+                pointer-events-none
+              "
+            />
+            <input
+              type="text"
+              className="input input-bordered w-full pl-10"
+              value={
+                otrosDatos.adicional
+                  ? `$${otrosDatos.adicional.toLocaleString("es-AR")}`
+                  : ""
+              }
+              onChange={(e) => {
+                const value = e.target.value.replace(/[^\d]/g, "");
+                handleOtrosDatosChange(
+                  "adicional",
+                  value === "" ? 0 : Number(value)
+                );
+              }}
+              placeholder="0"
+            />
+          </div>
 
           <label className="block mb-2 text-base-content">Adelanto</label>
-          <input
-            type="number"
-            className="input input-bordered w-full mb-2"
-            value={otrosDatos.adelanto}
-            onChange={(e) =>
-              handleOtrosDatosChange("adelanto", Number(e.target.value))
-            }
-          />
+          <div className="relative mb-4">
+            <FaDollarSign
+              className="
+                absolute 
+                left-3 
+                top-1/2 
+                transform -translate-y-1/2 
+                w-4 h-4 
+                text-gray-500 
+                pointer-events-none
+              "
+            />
+            <input
+              type="text"
+              className="input input-bordered w-full pl-10"
+              value={
+                otrosDatos.adelanto
+                  ? `$${otrosDatos.adelanto.toLocaleString("es-AR")}`
+                  : ""
+              }
+              onChange={(e) => {
+                const value = e.target.value.replace(/[^\d]/g, "");
+                handleOtrosDatosChange(
+                  "adelanto",
+                  value === "" ? 0 : Number(value)
+                );
+              }}
+              placeholder="0"
+            />
+          </div>
           {/* Checkbox "Pago el total" */}
           <div className="form-control mb-2">
             <label className="label cursor-pointer">
