@@ -51,7 +51,7 @@ function calcularSubtotal(remito: RemitoData): number {
   const subtotal = base;
   const descuentoValor = subtotal * (descuentoPorcentaje / 100);
   const instalacion = parseFloat(remito.valor_instalacion || "0");
-  const totalFinal = subtotal - descuentoValor - instalacion;
+  const totalFinal = subtotal - descuentoValor - flete - adicional;
 
   return totalFinal > 0 ? totalFinal : 0;
 }
