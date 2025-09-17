@@ -426,13 +426,24 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
   }, [productos, activeTab]);
 
   // Seleccionar un stock de la lista
-  const handleStockSeleccionado = async (index: number, idStock: string) => {
+  const handleStockSeleccionado = async (index: number, idModelo: string) => {
+    // Busca el modelo seleccionado por _id
     const productoSeleccionado = modeloData.find(
-      (item) => item._id === idStock
+      (item) => item._id === idModelo
     );
     if (!productoSeleccionado) return;
 
-    // Actualiza solo los datos del producto seleccionado, manteniendo los valores ya ingresados
+    const precios = await getPrecioByIdModelo(productoSeleccionado._id);
+
+    // Validar precios
+    const tienePrecioValido = precios.some(
+      (p: any) => p.precio !== null && p.precio !== undefined && Number(p.precio) > 0
+    );
+    if (!tienePrecioValido) {
+      setErrorMessage("No se puede seleccionar este producto porque no tiene precio asignado.");
+      return;
+    }
+
     setProductos((prev) => {
       const copy = [...prev];
       copy[index] = {
@@ -452,7 +463,6 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
       return copy;
     });
 
-    const precios = await getPrecioByIdModelo(productoSeleccionado._id);
     setPreciosPorProducto((prev) => {
       const copy = [...prev];
       copy[index] = precios;
@@ -634,7 +644,7 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
         flete: Number(otrosDatos.flete) || 0,
         descuento: Number(otrosDatos.descuento) || 0,
         adicional: Number(otrosDatos.adicional) || 0,
-        adelanto: Number(otrosDatos.adelanto) || 0,
+        adelanto: Number(otrosDatos.seña) || 0,
         total: totalEnviado,
         valor_instalacion: Number(otrosDatos.valor_instalacion) || 0,
         total_pendiente: Math.max(
@@ -822,7 +832,7 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
               </label>
               <select
                 className="select select-bordered w-full mb-4"
-                value={productos[activeTab]?.idStock || ""}
+                value={productos[activeTab]?.idModelo || ""}
                 onChange={(e) =>
                   handleStockSeleccionado(activeTab, e.target.value)
                 }
