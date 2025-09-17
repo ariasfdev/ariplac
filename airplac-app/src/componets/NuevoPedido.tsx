@@ -108,6 +108,8 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
     eliminados: [],
   });
 
+  const [showTipoProductoAlert, setShowTipoProductoAlert] = useState<null | {index: number, value: string}>(null);
+
   // Cargar datos de stock
   useEffect(() => {
     const fetchStockData = async () => {
@@ -425,45 +427,112 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
 
   // Seleccionar un stock de la lista
   const handleStockSeleccionado = async (index: number, idStock: string) => {
-    const precio = await getPrecioByIdModelo(idStock);
-    setPreciosPorProducto((prev) => {
-      const copy = [...prev];
-      copy[index] = precio;
-      return copy;
-    });
     const productoSeleccionado = modeloData.find(
       (item) => item._id === idStock
     );
-    if (productoSeleccionado) {
-      const nuevosProductos = [...productos];
-      nuevosProductos[index] = {
-        ...nuevosProductos[index],
+    if (!productoSeleccionado) return;
+
+    // Actualiza solo los datos del producto seleccionado, manteniendo los valores ya ingresados
+    setProductos((prev) => {
+      const copy = [...prev];
+      copy[index] = {
+        ...copy[index],
         idStock: productoSeleccionado.idStock,
         idModelo: productoSeleccionado._id,
         unidad: productoSeleccionado.unidad,
         pago: productoSeleccionado.pago || "",
-        materiales: "",
-        id_precio: "",
-        precio: 0,
-        precioTarjeta: 0,
+        // NO limpiar cantidad, materiales, id_precio, precio, precioTarjeta
       };
-      setProductos(nuevosProductos);
+      return copy;
+    });
 
-      // Actualizar filtro tipo producto solo para este producto
-      setFiltroTipoProductoPorProducto((prev) => {
+    setFiltroTipoProductoPorProducto((prev) => {
+      const copy = [...prev];
+      copy[index] = productoSeleccionado.producto || "";
+      return copy;
+    });
+
+    const precios = await getPrecioByIdModelo(productoSeleccionado._id);
+    setPreciosPorProducto((prev) => {
+      const copy = [...prev];
+      copy[index] = precios;
+      return copy;
+    });
+  };
+
+  // Nuevo efecto: Si cambia el modelo de un producto ya existente, actualizar los precios y limpiar los precios seleccionados
+  useEffect(() => {
+    productos.forEach(async (prod, idx) => {
+      // Solo limpiar el precio si el modelo cambió respecto al anterior
+      const precios = await getPrecioByIdModelo(prod.idModelo);
+      setPreciosPorProducto((prev) => {
         const copy = [...prev];
-        copy[index] = productoSeleccionado.producto || "";
+        copy[idx] = precios;
         return copy;
       });
-    }
-  };
+
+      // Si el id_precio seleccionado no existe en los precios actuales, limpiar
+      if (prod.id_precio && precios.length > 0 && !precios.some((p: any) => p._id === prod.id_precio)) {
+        setProductos((prev) => {
+          const copy = [...prev];
+          copy[idx] = {
+            ...copy[idx],
+            id_precio: "",
+            precio: 0,
+            precioTarjeta: 0,
+          };
+          return copy;
+        });
+      }
+      // Si el id_precio existe, no limpiar nada
+    });
+  }, [productos.map(p => p.idModelo).join(','), modeloData]);
+
   // Filtro tipo producto por producto/tab
   const handleFiltroTipoProductoChange = (index: number, value: string) => {
+    const prevTipo = filtroTipoProductoPorProducto[index];
+    const productoActual = productos[index];
+    const tieneDatos =
+      productoActual.idStock ||
+      productoActual.cantidad > 0 ||
+      productoActual.materiales ||
+      productoActual.id_precio ||
+      productoActual.precio > 0;
+
+    if (prevTipo !== value && tieneDatos) {
+      setShowTipoProductoAlert({index, value});
+      return;
+    }
+
     setFiltroTipoProductoPorProducto((prev) => {
       const copy = [...prev];
       copy[index] = value;
       return copy;
     });
+
+    // Solo limpiar si el tipo realmente cambió
+    if (prevTipo !== value) {
+      setProductos((prevProd) => {
+        const prodCopy = [...prevProd];
+        prodCopy[index] = {
+          idStock: "",
+          idModelo: "",
+          cantidad: 0,
+          unidad: "",
+          materiales: "",
+          pago: "",
+          id_precio: "",
+          precio: 0,
+          precioTarjeta: 0,
+        };
+        return prodCopy;
+      });
+      setPreciosPorProducto((prevPrecios) => {
+        const preciosCopy = [...prevPrecios];
+        preciosCopy[index] = [];
+        return preciosCopy;
+      });
+    }
   };
 
   const calcularTotal = () => {
@@ -1137,6 +1206,45 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
         <ErrorModal
           message={errorMessage}
           onClose={() => setErrorMessage("")}
+        />
+      )}
+      {/* Modal de confirmación para cambio de tipo de producto */}
+      {showTipoProductoAlert && (
+        <ErrorModal
+          message="Esta acción borrará los datos que están cargados referentes al producto. ¿Desea continuar?"
+          onClose={() => setShowTipoProductoAlert(null)}
+          onConfirm={() => {
+            const {index, value} = showTipoProductoAlert;
+            setShowTipoProductoAlert(null);
+            setFiltroTipoProductoPorProducto((prev) => {
+              const copy = [...prev];
+              copy[index] = value;
+              return copy;
+            });
+            setProductos((prevProd) => {
+              const prodCopy = [...prevProd];
+              prodCopy[index] = {
+                idStock: "",
+                idModelo: "",
+                cantidad: 0,
+                unidad: "",
+                materiales: "",
+                pago: "",
+                id_precio: "",
+                precio: 0,
+                precioTarjeta: 0,
+              };
+              return prodCopy;
+            });
+            setPreciosPorProducto((prevPrecios) => {
+              const preciosCopy = [...prevPrecios];
+              preciosCopy[index] = [];
+              return preciosCopy;
+            });
+          }}
+          confirmText="Aceptar"
+          cancelText="Cancelar"
+          showConfirm={true} // <-- asegúrate de pasar esto si tu ErrorModal lo requiere
         />
       )}
     </>

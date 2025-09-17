@@ -4,9 +4,20 @@ import Modal from "./Modal"; // Ajusta la ruta si está en otra carpeta
 interface ErrorModalProps {
   message: string;
   onClose: () => void;
+  onConfirm?: () => void;
+  confirmText?: string;
+  cancelText?: string;
+  showConfirm?: boolean;
 }
 
-const ErrorModal: React.FC<ErrorModalProps> = ({ message, onClose }) => {
+const ErrorModal: React.FC<ErrorModalProps> = ({
+  message,
+  onClose,
+  onConfirm,
+  confirmText = "Aceptar",
+  cancelText = "Cancelar",
+  showConfirm,
+}) => {
   const [show, setShow] = useState(false);
 
   useEffect(() => {
@@ -29,10 +40,21 @@ const ErrorModal: React.FC<ErrorModalProps> = ({ message, onClose }) => {
       >
         <h2 className="text-xl font-bold mb-2 text-red-600">⚠ Error</h2>
         <p>{message}</p>
-        <div className="mt-4 flex justify-end">
-          <button className="btn btn-error" onClick={handleClose}>
-            Cerrar
-          </button>
+        <div className="mt-4 flex justify-end gap-2">
+          {onConfirm ? (
+            <>
+              <button className="btn btn-error" onClick={handleClose}>
+                {cancelText}
+              </button>
+              <button className="btn btn-primary" onClick={onConfirm}>
+                {confirmText}
+              </button>
+            </>
+          ) : (
+            <button className="btn btn-error" onClick={handleClose}>
+              Cerrar
+            </button>
+          )}
         </div>
       </div>
     </Modal>

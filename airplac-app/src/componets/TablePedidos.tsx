@@ -884,7 +884,7 @@ const TablePedidos: React.FC = () => {
               <div className="bg-red-50 rounded-md p-3 max-h-40 overflow-y-auto">
                 {pendingProducts.map((producto, index) => (
                   <div key={index} className="flex justify-between items-center py-1">
-                    <span className="text-sm font-medium text-red-800">{producto.nombre}</span>
+                    <span className="text-sm font-medium text-red-800">{producto.modelo}</span>
                     <span className="text-xs bg-red-200 text-red-800 px-2 py-1 rounded-full">
                       Cantidad: {producto.cantidad}
                     </span>
