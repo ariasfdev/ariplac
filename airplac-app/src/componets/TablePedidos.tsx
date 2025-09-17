@@ -860,30 +860,36 @@ const TablePedidos: React.FC = () => {
       )
       .filter((pedido: any) => (ocultarEntregados ? pedido.disponible?.toLowerCase() !== "entregado" : true))
   }, [pedidos, visibleColumns, searchQuery, ocultarEntregados])
+const sortedPedidos = useMemo(() => {
+  if (!sortConfig.key) return filteredPedidos
 
-  const sortedPedidos = useMemo(() => {
-    if (!sortConfig.key) return filteredPedidos
+  return [...filteredPedidos].sort((a, b) => {
+    const aValue = (a as any)[sortConfig.key]
+    const bValue = (b as any)[sortConfig.key]
 
-    return [...filteredPedidos].sort((a, b) => {
-      const aValue = (a as any)[sortConfig.key]
-      const bValue = (b as any)[sortConfig.key]
+    let comparison = 0
 
-      let comparison = 0
-      if (typeof aValue === "number" && typeof bValue === "number") {
-        comparison = aValue - bValue
-      } else {
-        comparison = aValue?.toString().localeCompare(bValue?.toString())
-      }
+    // Caso especial: ordenar remitos como número
+    if (sortConfig.key === "remito") {
+      const numA = Number(a.remito) || 0
+      const numB = Number(b.remito) || 0
+      comparison = numA - numB
+    } else if (typeof aValue === "number" && typeof bValue === "number") {
+      comparison = aValue - bValue
+    } else {
+      comparison = aValue?.toString().localeCompare(bValue?.toString())
+    }
 
-      if (comparison === 0) {
-        const remitoA = Number(a.remito) || 0
-        const remitoB = Number(b.remito) || 0
-        comparison = remitoB - remitoA
-      }
+    if (comparison === 0) {
+      // Desempatar con número de remito si es necesario
+      const remitoA = Number(a.remito) || 0
+      const remitoB = Number(b.remito) || 0
+      comparison = remitoB - remitoA
+    }
 
-      return sortConfig.direction === "asc" ? comparison : -comparison
-    })
-  }, [filteredPedidos, sortConfig])
+    return sortConfig.direction === "asc" ? comparison : -comparison
+  })
+}, [filteredPedidos, sortConfig])
 
   // Funciones de paginación
   const indexOfLastItem = currentPage * itemsPerPage
