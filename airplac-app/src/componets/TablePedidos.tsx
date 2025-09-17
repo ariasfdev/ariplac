@@ -808,7 +808,7 @@ const TablePedidos: React.FC = () => {
       .filter((pedido: any) =>
         visibleColumns.some((col) => col.visible && pedido[col.key]?.toString().toLowerCase().includes(searchQuery)),
       )
-      .filter((pedido: any) => (ocultarEntregados ? pedido.estado?.toLowerCase() !== "entregado" : true))
+      .filter((pedido: any) => (ocultarEntregados ? pedido.disponible?.toLowerCase() !== "entregado" : true))
   }, [pedidos, visibleColumns, searchQuery, ocultarEntregados])
 
   const sortedPedidos = useMemo(() => {
