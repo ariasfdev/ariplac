@@ -9,6 +9,7 @@ import ErrorModal from "./ErrorModal"
 import RemitoModal from "./RemitoModal"
 import SuccessModal from "./SuccessModal"
 import ConfirmActionModal from "./ConfirmActionModal"
+import axios from "axios"
 
 // Componente para el modal de comentarios
 const ComentarioModal: React.FC<{
@@ -95,7 +96,7 @@ const COLUMNS: Column[] = [
   { key: "contacto", label: "Contacto", visible: false },
   { key: "detalle", label: "Producto", visible: true },
   { key: "cantidadM2", label: "Cant.", visible: true },
-  { key: "materiales", label: "Materiales", visible: true },
+  { key: "materiales", label: "Tipo de Precio", visible: true },
   { key: "pago", label: "Pago", visible: false },
   { key: "procedencia", label: "Procedencia", visible: false },
   { key: "seña", label: "Seña", visible: false },
@@ -442,6 +443,30 @@ const TableCell: React.FC<{
   isExpanded?: boolean
   tieneMasDeUnProducto?: boolean
 }> = ({ col, row, isExpanded, tieneMasDeUnProducto }) => {
+  const [preciosModelo, setPreciosModelo] = useState<any[]>([]);
+  const [loadingPrecio, setLoadingPrecio] = useState(false);
+
+  useEffect(() => {
+    if (col.key === "materiales") {
+      const producto = row.productos && row.productos[0];
+      if (producto && producto.idModelo && producto.id_precio) {
+        setLoadingPrecio(true);
+        axios.get(`${API_BASE_URL}/stock/precios/${producto.idModelo}`)
+          .then(res => {
+            setPreciosModelo(res.data || []);
+            producto.preciosModelo = res.data || [];
+            setLoadingPrecio(false);
+          })
+          .catch(() => {
+            setPreciosModelo([]);
+            producto.preciosModelo = [];
+            setLoadingPrecio(false);
+          });
+      }
+    }
+    // eslint-disable-next-line
+  }, [row]);
+
   const renderCellContent = () => {
     if (col.key === "total" || col.key === "total_pendiente") {
       return <span className="font-bold text-success">{formatCurrency(row[col.key] as number)}</span>
@@ -537,6 +562,31 @@ const TableCell: React.FC<{
           <span className="text-sm font-bold text-base-content">{formatDate(row[col.key])}</span>
         </div>
       )
+    }
+    if (col.key === "materiales") {
+      const producto = row.productos && row.productos[0]
+      if (loadingPrecio) {
+        return <span className="text-xs text-base-content/60">Cargando...</span>;
+      }
+      if (producto && producto.id_precio && preciosModelo.length > 0) {
+        const precioObj = preciosModelo.find((p: any) => String(p._id) === String(producto.id_precio));
+        if (precioObj) {
+          return (
+            <span className="font-bold text-gray-500">
+              {precioObj.nombre_precio}
+            </span>
+          );
+        }
+      }
+      if (producto && producto.precio !== undefined) {
+        return (
+          <span className="font-bold text-success">
+            {/* Solo mostrar el nombre del precio si existe, no el valor */}
+            {producto.nombre_precio || "Sin nombre"}
+          </span>
+        );
+      }
+      return <span className="text-xs text-base-content/60">Sin precio</span>;
     }
     return row[col.key]
   }
@@ -1130,7 +1180,7 @@ const TablePedidos: React.FC = () => {
                                     content = prod.cantidad
                                     break
                                   case "materiales":
-                                    content = prod.materiales || "Sin materiales"
+                                    content = prod.nombre_precio  || "Sin materiales"
                                     break
                                   case "valorM2":
                                     content = `$${Number(prod.valorM2 || 0).toFixed(2)}`
@@ -1154,7 +1204,6 @@ const TablePedidos: React.FC = () => {
               </tbody>
             </table>
           </div>
-
           {/* Paginación */}
           <div className="bg-base-200 px-6 py-4 border-t">
             <div className="flex justify-between items-center">
@@ -1255,3 +1304,5 @@ const TablePedidos: React.FC = () => {
 }
 
 export default TablePedidos
+
+
