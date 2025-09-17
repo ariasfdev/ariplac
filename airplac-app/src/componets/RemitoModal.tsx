@@ -33,7 +33,8 @@ interface RemitoData {
   descuento?: string;
   seña?: string;
   valor_instalacion?: string;
-  adicional?: string; // <-- agregar campo adicional
+  adicional?: string;
+  metodo_pago?: string; // <-- agregar propiedad
 }
 
 interface RemitoModalProps {
@@ -172,7 +173,7 @@ const RemitoModal: React.FC<RemitoModalProps> = ({ remitoData, onClose }) => {
     const tableMargin = (pageWidth - tableWidth) / 2;
 
     const productosBody = editableRemito.productos.map((prod, idx) => {
-      const valorUnitario = getValorM2(prod, editableRemito?.pago || editableRemito?.metodo_pago);
+      const valorUnitario = getValorM2(prod, editableRemito?.metodo_pago);
       const total = prod.cantidad * valorUnitario;
       return [
         (idx + 1).toString(),
@@ -217,7 +218,10 @@ const RemitoModal: React.FC<RemitoModalProps> = ({ remitoData, onClose }) => {
     });
 
     // --- RESUMEN DE TOTALES ---
-    let currentY = doc.lastAutoTable.finalY + 10;
+    // let currentY = doc.lastAutoTable.finalY + 10;
+    let currentY = (doc as any).autoTable?.previous?.finalY
+      ? (doc as any).autoTable.previous.finalY + 10
+      : 106; // fallback si no hay tabla
     doc.setFont("helvetica", "bold");
     doc.setFontSize(11);
     doc.text("Resumen de Totales", pageWidth / 2, currentY, { align: "center" });
@@ -496,7 +500,7 @@ const RemitoModal: React.FC<RemitoModalProps> = ({ remitoData, onClose }) => {
                           : 0;
                         const redondeo = (prod as any).total_redondeo || 0;
                         // Usar getValorM2 para mostrar el valor correcto
-                        const valorUnitario = getValorM2(prod as Producto, editableRemito?.pago || editableRemito?.metodo_pago);
+                        const valorUnitario = getValorM2(prod as Producto, editableRemito?.metodo_pago);
                         const total = prod.cantidad * valorUnitario;
 
                         return (
@@ -920,4 +924,4 @@ const RemitoModal: React.FC<RemitoModalProps> = ({ remitoData, onClose }) => {
 };
 
 export default RemitoModal;
-            
+

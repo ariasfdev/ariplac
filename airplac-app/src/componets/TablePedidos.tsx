@@ -725,7 +725,7 @@ const TablePedidos: React.FC = () => {
   const cambiarEstado = useCallback(
     (pedidoId: string, nuevoEstado: string) => {
       // Buscar el pedido en la lista
-      const pedido = pedidos.find((p: any) => p.id === pedidoId)
+      const pedido = pedidos.find((p: any) => p.id === pedidoId) as any // <-- asegura tipo any
       if (pedido && pedido.productos) {
         // Verificar si algún producto tiene estado_stock === "Pendiente"
         const productosPendientes = pedido.productos.filter((prod: any) => prod.estado_stock === "Pendiente")
