@@ -558,7 +558,13 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
       }
 
       if (otrosDatos.metodo_pago === "credito") {
-        valorBase += valorBase * ((prod.precioTarjeta || 0) / 100);
+        console.log(
+          `[LOG] Antes de sumar tarjeta: valorBase=${valorBase}, precioTarjeta(%)=${prod.precioTarjeta}`
+        );
+        valorBase = prod.precioTarjeta ;
+        console.log(
+          `[LOG] Después de sumar tarjeta: valorBase=${valorBase}`
+        );
       }
 
       return sum + prod.cantidad * valorBase;
