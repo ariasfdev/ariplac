@@ -98,9 +98,28 @@ const NuevoModelo: React.FC<NuevoModeloProps> = ({
     try {
       await onSave(formData);
       handleClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error al guardar el modelo:", error);
-      setErrorMessage("Ocurrió un error al guardar el modelo.");
+      console.log("Error status directo:", error?.status);
+      console.log("Error response status:", error?.response?.status);
+      console.log("Response data:", error?.response?.data);
+      
+      // Verificar si es un error de duplicado (409 Conflict)
+      if (error?.status === 409 || error?.response?.status === 409) {
+        console.log("✅ Detectado error 409 - Mostrando mensaje de duplicado");
+        setErrorMessage(
+          `No se puede crear el modelo "${formData.modelo}" porque ya existe uno con el mismo nombre. Por favor, elige un nombre diferente.`
+        );
+      } else if (error?.response?.data?.message) {
+        console.log("📝 Usando mensaje del servidor");
+        setErrorMessage(error.response.data.message);
+      } else if (error?.message) {
+        console.log("⚠️ Usando mensaje general del error");
+        setErrorMessage(error.message);
+      } else {
+        console.log("❌ Usando mensaje genérico");
+        setErrorMessage("Ocurrió un error al guardar el modelo. Por favor, inténtalo nuevamente.");
+      }
     }
   };
 

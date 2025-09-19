@@ -98,7 +98,7 @@ const Nav: React.FC<NavProps> = ({ isNavVisible, setIsNavVisible }) => {
     },
     {
       path: "/home/admin",
-      label: "Admin",
+      label: "Control Stock",
       icon: (
         <svg
           className="w-5 h-5"
@@ -120,7 +120,7 @@ const Nav: React.FC<NavProps> = ({ isNavVisible, setIsNavVisible }) => {
           />
         </svg>
       ),
-      description: "Configuración y administración",
+      description: "Movimientos de Stock",
     },
   ];
 

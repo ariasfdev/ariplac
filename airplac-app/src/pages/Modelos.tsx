@@ -145,7 +145,11 @@ const Modelos = () => {
       }
     } catch (err) {
       console.error("Error al guardar el modelo:", err);
-      setError("Error al guardar el modelo.");
+      // NO establecer setError aquí, dejar que el error se propague al componente NuevoModelo
+      // setError("Error al guardar el modelo.");
+      
+      // Re-lanzar el error para que llegue al componente NuevoModelo
+      throw err;
     }
   };
 
