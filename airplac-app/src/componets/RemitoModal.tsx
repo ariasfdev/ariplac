@@ -508,31 +508,35 @@ const RemitoModal: React.FC<RemitoModalProps> = ({ remitoData, onClose }) => {
                     <div className="stat-title">Cliente</div>
                     <div className="stat-value text-lg">
                       {typeof editableRemito.cliente === "object"
-                        ? editableRemito.cliente?.nombre
+                        ? editableRemito.cliente
                         : editableRemito.cliente}
                     </div>
                   </div>
                   <div className="stat bg-base-100 rounded-lg">
                     <div className="stat-title">DNI/CUIL</div>
                     <div className="stat-value text-lg">
-                      {typeof editableRemito.cliente === "object"
-                        ? editableRemito.cliente?.dni_cuil || editableRemito.dni_cuil || ""
+                      {typeof editableRemito.cliente === "object" && editableRemito.cliente !== null && "dni_cuil" in editableRemito.cliente
+                        ? (editableRemito.cliente as { dni_cuil?: string }).dni_cuil || editableRemito.dni_cuil || ""
                         : editableRemito.dni_cuil || ""}
                     </div>
                   </div>
                   <div className="stat bg-base-100 rounded-lg">
                     <div className="stat-title">Dirección</div>
                     <div className="stat-value text-lg">
-                      {typeof editableRemito.cliente === "object"
-                        ? editableRemito.cliente?.direccion
+                      {typeof editableRemito.cliente === "object" &&
+                        editableRemito.cliente !== null &&
+                        "direccion" in editableRemito.cliente
+                        ? (editableRemito.cliente as { direccion?: string }).direccion || editableRemito.direccion
                         : editableRemito.direccion}
                     </div>
                   </div>
                   <div className="stat bg-base-100 rounded-lg">
                     <div className="stat-title">Contacto</div>
                     <div className="stat-value text-lg">
-                      {typeof editableRemito.cliente === "object"
-                        ? editableRemito.cliente?.contacto
+                      {typeof editableRemito.cliente === "object" &&
+                        editableRemito.cliente !== null &&
+                        "contacto" in editableRemito.cliente
+                        ? (editableRemito.cliente as { contacto?: string }).contacto || editableRemito.contacto
                         : editableRemito.contacto}
                     </div>
                   </div>
