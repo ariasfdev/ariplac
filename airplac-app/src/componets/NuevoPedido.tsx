@@ -652,7 +652,7 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
         flete: Number(otrosDatos.flete) || 0,
         descuento: Number(otrosDatos.descuento) || 0,
         adicional: Number(otrosDatos.adicional) || 0,
-        adelanto: Number(otrosDatos.adelanto) || 0, // <-- corregido aquí
+        adelanto: Number(otrosDatos.adelanto) || 0,
         total: totalEnviado,
         valor_instalacion: Number(otrosDatos.valor_instalacion) || 0,
         total_pendiente: Math.max(
