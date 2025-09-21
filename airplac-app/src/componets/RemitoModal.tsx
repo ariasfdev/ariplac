@@ -35,6 +35,7 @@ interface RemitoData {
   valor_instalacion?: string;
   adicional?: string;
   metodo_pago?: string; // <-- agregar propiedad
+  dni_cuil: string; // <-- agregar esta línea
 }
 
 interface RemitoModalProps {
@@ -112,6 +113,8 @@ const RemitoModal: React.FC<RemitoModalProps> = ({ remitoData, onClose }) => {
     return `${day}/${month}/${year}`;
   }
 
+  const tipoRemito = (editableRemito as any)?.tipo === "presupuesto" ? "presupuesto" : "pedido";
+
   const generatePDF = () => {
     if (!editableRemito) return;
 
@@ -138,7 +141,11 @@ const RemitoModal: React.FC<RemitoModalProps> = ({ remitoData, onClose }) => {
     // --- Remito y datos principales ---
     doc.setFont("helvetica", "bold");
     doc.setFontSize(14);
-    doc.text(`Remito Nº: ${editableRemito.remito}`, 15, 50);
+    if (tipoRemito === "presupuesto") {
+      doc.text(`Presupuesto`, 15, 50);
+    } else {
+      doc.text(`Remito Nº: ${editableRemito.remito}`, 15, 50);
+    }
 
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
@@ -146,7 +153,7 @@ const RemitoModal: React.FC<RemitoModalProps> = ({ remitoData, onClose }) => {
       align: "right",
     });
 
-    // --- DATOS DEL CLIENTE (solo cliente, alineado como imagen adjunta) ---
+    // --- DATOS DEL CLIENTE (en dos columnas) ---
     doc.setDrawColor(0, 0, 0);
     doc.setLineWidth(0.3);
     doc.setFillColor(245, 246, 247); // fondo suave
@@ -158,14 +165,16 @@ const RemitoModal: React.FC<RemitoModalProps> = ({ remitoData, onClose }) => {
 
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
+
+    // Columna izquierda
     doc.text(`Cliente: ${editableRemito.cliente}`, 20, 71);
     doc.text(`Dirección: ${editableRemito.direccion}`, 20, 77);
     doc.text(`Contacto: ${editableRemito.contacto}`, 20, 83);
 
-    // Datos a la derecha
+    // Columna derecha
     doc.text(`Fecha: ${formatDate(new Date())}`, pageWidth - 90, 71);
     doc.text("Condición: Contado", pageWidth - 90, 77);
-    doc.text("CUIT: ________________", pageWidth - 90, 83);
+    doc.text(`DNI/CUIL: ${editableRemito.dni_cuil}`, pageWidth - 90, 83);
 
     // --- TABLA DE PRODUCTOS CENTRADA ---
     doc.setDrawColor(0, 0, 0);
@@ -226,10 +235,13 @@ const RemitoModal: React.FC<RemitoModalProps> = ({ remitoData, onClose }) => {
     });
 
     // --- RESUMEN DE TOTALES ---
-    // let currentY = doc.lastAutoTable.finalY + 10;
-    let currentY = (doc as any).autoTable?.previous?.finalY
+    // Usar la posición final de la tabla para colocar el resumen debajo
+    let currentY = (doc as any).lastAutoTable?.finalY
+      ? (doc as any).lastAutoTable.finalY + 10
+      : (doc as any).autoTable?.previous?.finalY
       ? (doc as any).autoTable.previous.finalY + 10
       : 106; // fallback si no hay tabla
+
     doc.setFont("helvetica", "bold");
     doc.setFontSize(11);
     doc.text("Resumen de Totales", pageWidth / 2, currentY, {
@@ -396,7 +408,9 @@ const RemitoModal: React.FC<RemitoModalProps> = ({ remitoData, onClose }) => {
                   d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                 />
               </svg>
-              Remito #{editableRemito.remito}
+              {tipoRemito === "presupuesto"
+                ? "Presupuesto"
+                : `Remito #${editableRemito.remito}`}
             </h3>
             <button
               onClick={onClose}
@@ -493,19 +507,33 @@ const RemitoModal: React.FC<RemitoModalProps> = ({ remitoData, onClose }) => {
                   <div className="stat bg-base-100 rounded-lg">
                     <div className="stat-title">Cliente</div>
                     <div className="stat-value text-lg">
-                      {editableRemito.cliente}
+                      {typeof editableRemito.cliente === "object"
+                        ? editableRemito.cliente?.nombre
+                        : editableRemito.cliente}
+                    </div>
+                  </div>
+                  <div className="stat bg-base-100 rounded-lg">
+                    <div className="stat-title">DNI/CUIL</div>
+                    <div className="stat-value text-lg">
+                      {typeof editableRemito.cliente === "object"
+                        ? editableRemito.cliente?.dni_cuil || editableRemito.dni_cuil || ""
+                        : editableRemito.dni_cuil || ""}
                     </div>
                   </div>
                   <div className="stat bg-base-100 rounded-lg">
                     <div className="stat-title">Dirección</div>
                     <div className="stat-value text-lg">
-                      {editableRemito.direccion}
+                      {typeof editableRemito.cliente === "object"
+                        ? editableRemito.cliente?.direccion
+                        : editableRemito.direccion}
                     </div>
                   </div>
                   <div className="stat bg-base-100 rounded-lg">
                     <div className="stat-title">Contacto</div>
                     <div className="stat-value text-lg">
-                      {editableRemito.contacto}
+                      {typeof editableRemito.cliente === "object"
+                        ? editableRemito.cliente?.contacto
+                        : editableRemito.contacto}
                     </div>
                   </div>
                   <div className="stat bg-base-100 rounded-lg">
@@ -780,6 +808,19 @@ const RemitoModal: React.FC<RemitoModalProps> = ({ remitoData, onClose }) => {
                     className="input input-bordered w-full"
                     value={editableRemito.fecha || ""}
                     onChange={(e) => handleInputChange("fecha", e.target.value)}
+                  />
+                </div>
+
+                {/* --- AGREGAR CAMPO DNI/CUIL --- */}
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text font-semibold">DNI/CUIL</span>
+                  </label>
+                  <input
+                    type="text"
+                    className="input input-bordered w-full"
+                    value={editableRemito.dni_cuil || ""}
+                    onChange={(e) => handleInputChange("dni_cuil", e.target.value)}
                   />
                 </div>
 

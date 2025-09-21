@@ -17,6 +17,7 @@ interface Pedido {
     nombre: string;
     direccion: string;
     contacto: string;
+    dni_cuil: string; // <-- nuevo campo
   };
   productos: {
     idStock: string;

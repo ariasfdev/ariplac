@@ -69,6 +69,7 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
     nombre: "",
     direccion: "",
     contacto: "",
+    dni_cuil: "", // <-- nuevo campo
   });
 
   const [otrosDatos, setOtrosDatos] = useState({
@@ -162,6 +163,7 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
         nombre: "",
         direccion: "",
         contacto: "",
+        dni_cuil: "", // <-- nuevo campo
       });
       setOtrosDatos({
         estado: "",
@@ -236,6 +238,7 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
         nombre: pedido.cliente || "",
         direccion: pedido.direccion || "",
         contacto: pedido.contacto || "",
+        dni_cuil: pedido.dni_cuil || "", // <-- añade dni_cuil aquí
       });
       console.log(pedido.seña);
       setOtrosDatos({
@@ -272,6 +275,7 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
         nombre: "",
         direccion: "",
         contacto: "",
+        dni_cuil: "", // <-- añade dni_cuil aquí
       });
 
       setOtrosDatos({
@@ -997,6 +1001,14 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
             className="input input-bordered w-full mb-2"
             value={cliente.contacto}
             onChange={(e) => handleClienteChange("contacto", e.target.value)}
+          />
+
+          <label className="block mb-2 text-base-content">DNI/CUIL</label>
+          <input
+            type="text"
+            className="input input-bordered w-full mb-2"
+            value={cliente.dni_cuil || ""}
+            onChange={(e) => handleClienteChange("dni_cuil", e.target.value)}
           />
         </div>
       )}

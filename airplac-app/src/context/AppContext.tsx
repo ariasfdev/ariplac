@@ -16,6 +16,7 @@ interface Pedido {
   cliente: string;
   direccion: string;
   contacto: string;
+  dni_cuil: string;
   detalle: string;
   cantidadM2: number;
   materiales: string;
