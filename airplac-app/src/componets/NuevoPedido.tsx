@@ -109,6 +109,7 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
   });
 
   const [showTipoProductoAlert, setShowTipoProductoAlert] = useState<null | {index: number, value: string}>(null);
+  const [tipo, setTipo] = useState<string>(pedido?.tipo ?? "pedido");
 
   // Cargar datos de stock
   useEffect(() => {
@@ -283,6 +284,7 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
 
       setCurrentTotal(0); // ✅ También reiniciar el total
       setIncluyeInstalacion(false);
+      setTipo("pedido"); // <-- Por defecto, nuevo pedido
     }
   }, [editarPedido, pedido]);
 
@@ -657,6 +659,7 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
           totalEnviado - Number(otrosDatos.adelanto || 0),
           0
         ),
+        tipo, // <-- enviar tipo
       };
 
       if (editarPedido && pedido) {
@@ -694,6 +697,27 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
 
   return (
     <>
+      {/* Selector elegante de tipo de pedido */}
+      <div className="mb-4">
+        <label className="block mb-2 text-base-content font-bold">Tipo</label>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            className={`btn w-1/2 ${tipo === "pedido" ? "btn-primary" : "btn-outline"}`}
+            onClick={() => setTipo("pedido")}
+          >
+            Pedido
+          </button>
+          <button
+            type="button"
+            className={`btn w-1/2 ${tipo === "presupuesto" ? "btn-primary" : "btn-outline"}`}
+            onClick={() => setTipo("presupuesto")}
+          >
+            Presupuesto
+          </button>
+        </div>
+      </div>
+
       {/* Título y total en Desktop */}
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-bold text-base-content">

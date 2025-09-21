@@ -89,6 +89,7 @@ interface Pedido {
 // Configuración de columnas
 const COLUMNS: Column[] = [
   { key: "remito", label: "Remito", visible: true },
+  { key: "tipo", label: "Tipo", visible: true }, // <-- Mueve aquí la columna tipo
   { key: "fecha", label: "Fecha", visible: true },
   { key: "año", label: "Año", visible: false },
   { key: "cliente", label: "Cliente", visible: true },
@@ -106,6 +107,7 @@ const COLUMNS: Column[] = [
   { key: "estado", label: "Estado", visible: true },
   { key: "disponible", label: "Disponible", visible: true },
   { key: "acciones", label: "Acciones", visible: true },
+  // { key: "tipo", label: "Tipo", visible: true }, // <-- Nueva columna
 ]
 
 // Hook personalizado para el estado de la tabla
@@ -587,6 +589,15 @@ const TableCell: React.FC<{
         );
       }
       return <span className="text-xs text-base-content/60">Sin precio</span>;
+    }
+    if (col.key === "tipo") {
+      // Mostrar el valor tal cual viene del backend, capitalizado
+      const tipoValue = (row.tipo || "").toLowerCase();
+      return (
+        <span className={`badge ${tipoValue === "presupuesto" ? "badge-neutral" : "badge-primary"} capitalize`}>
+          {tipoValue.charAt(0).toUpperCase() + tipoValue.slice(1)}
+        </span>
+      );
     }
     return row[col.key]
   }
