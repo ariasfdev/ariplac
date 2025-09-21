@@ -813,7 +813,7 @@ const Stock: React.FC = () => {
                                 : "text-error"
                             }`}
                           >
-                            {stock.stock}
+                            {Number(stock.stock).toFixed(2)}
                           </span>
                           <div className="flex flex-col">
                             <span className="text-xs text-base-content/60">
@@ -905,15 +905,17 @@ const Stock: React.FC = () => {
                                 d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
                               />
                             </svg>
-                            {stock.stock_reservado?.pedidos
-                              ?.filter(
-                                (pedido) => pedido.estado === "reservado"
-                              )
-                              .reduce(
-                                (total, pedido) =>
-                                  total + pedido.cantidad_placas,
-                                0
-                              ) || 0}
+                            {Number(
+                              stock.stock_reservado?.pedidos
+                                ?.filter(
+                                  (pedido) => pedido.estado === "reservado"
+                                )
+                                .reduce(
+                                  (total, pedido) =>
+                                    total + pedido.cantidad_placas,
+                                  0
+                                ) || 0
+                            ).toFixed(2)}
                           </div>
                         </div>
                       </td>
@@ -978,15 +980,17 @@ const Stock: React.FC = () => {
                                 d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
                               />
                             </svg>
-                            {stock.stock_reservado?.pedidos
-                              ?.filter(
-                                (pedido) => pedido.estado === "pendiente"
-                              )
-                              .reduce(
-                                (total, pedido) =>
-                                  total + pedido.cantidad_placas,
-                                0
-                              ) || 0}
+                            {Number(
+                              stock.stock_reservado?.pedidos
+                                ?.filter(
+                                  (pedido) => pedido.estado === "pendiente"
+                                )
+                                .reduce(
+                                  (total, pedido) =>
+                                    total + pedido.cantidad_placas,
+                                  0
+                                ) || 0
+                            ).toFixed(2)}
                           </div>
                         </div>
                       </td>
@@ -1026,7 +1030,7 @@ const Stock: React.FC = () => {
                                     : "text-error"
                                 }`}
                               >
-                                {disponible}
+                                {Number(disponible).toFixed(2)}
                               </span>
                               <div className="flex flex-col">
                                 <span className="text-xs text-base-content/60">
