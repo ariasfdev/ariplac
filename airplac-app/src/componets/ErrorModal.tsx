@@ -8,6 +8,7 @@ interface ErrorModalProps {
   confirmText?: string;
   cancelText?: string;
   showConfirm?: boolean;
+  title?: string; // Nuevo título opcional
 }
 
 const ErrorModal: React.FC<ErrorModalProps> = ({
@@ -17,6 +18,7 @@ const ErrorModal: React.FC<ErrorModalProps> = ({
   confirmText = "Aceptar",
   cancelText = "Cancelar",
   showConfirm,
+  title, // Nuevo título opcional
 }) => {
   const [show, setShow] = useState(false);
 
@@ -38,7 +40,9 @@ const ErrorModal: React.FC<ErrorModalProps> = ({
           show ? "opacity-100 scale-100" : "opacity-0 scale-95"
         }`}
       >
-        <h2 className="text-xl font-bold mb-2 text-red-600">⚠ Error</h2>
+        <h2 className="text-xl font-bold mb-2 text-red-600">
+          {title || "⚠ Error"}
+        </h2>
         <p>{message}</p>
         <div className="mt-4 flex justify-end gap-2">
           {onConfirm ? (

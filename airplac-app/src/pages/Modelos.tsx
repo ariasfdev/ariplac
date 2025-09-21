@@ -4,6 +4,7 @@ import NuevoModelo from "../componets/NuevoModelo";
 import AgregarStock from "../componets/AgregarStock";
 import ModificarPrecio from "../componets/ModificarPrecio";
 import ModeloStockCreatedModal from "../componets/ModeloStockCreatedModal";
+import ErrorModal from "../componets/ErrorModal";
 import { API_BASE_URL } from "../config";
 
 interface Modelo {
@@ -74,6 +75,12 @@ const Modelos = () => {
   const [isModificarPrecioOpen, setIsModificarPrecioOpen] = useState(false);
   const [selectedStockForPrecio, setSelectedStockForPrecio] =
     useState<Stock | null>(null);
+
+  // Estado para el modal de confirmación/eliminación
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteModeloId, setDeleteModeloId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleteSuccess, setDeleteSuccess] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchModelos = async () => {
@@ -215,6 +222,45 @@ const Modelos = () => {
         console.error("Detalles del error:", err.response.data);
       }
     }
+  };
+
+  // Nueva función para mostrar el modal de confirmación
+  const handleDeleteClick = (modeloId: string) => {
+    setDeleteModeloId(modeloId);
+    setDeleteError(null);
+    setShowDeleteModal(true);
+  };
+
+  // Función para eliminar modelo (solo se llama si el usuario confirma)
+  const handleDeleteConfirm = async () => {
+    if (!deleteModeloId) return;
+    try {
+      await axios.post(`${API_BASE_URL}/modelos/eliminar/${deleteModeloId}`);
+      // Refrescar lista de modelos
+      const response = await axios.get(`${API_BASE_URL}/modelos/`);
+      setModelos(response.data);
+      setShowDeleteModal(false);
+      setDeleteModeloId(null);
+      setDeleteError(null);
+      setDeleteSuccess("¡Modelo eliminado correctamente!");
+    } catch (err: any) {
+      setDeleteError(
+        err?.response?.data?.message ||
+        "Error al eliminar el modelo. Puede tener pedidos pendientes."
+      );
+    }
+  };
+
+  // Función para cerrar el modal
+  const handleDeleteClose = () => {
+    setShowDeleteModal(false);
+    setDeleteModeloId(null);
+    setDeleteError(null);
+  };
+
+  // Función para cerrar el modal de éxito
+  const handleDeleteSuccessClose = () => {
+    setDeleteSuccess(null);
   };
 
   // Filtrar modelos basado en el término de búsqueda
@@ -514,6 +560,26 @@ const Modelos = () => {
                         </svg>
                         Editar
                       </button>
+                      {/* Botón Eliminar */}
+                      <button
+                        className="btn btn-error btn-sm"
+                        onClick={() => handleDeleteClick(modelo._id)}
+                      >
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M6 18L18 6M6 6l12 12"
+                          />
+                        </svg>
+                        Eliminar
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -555,6 +621,36 @@ const Modelos = () => {
           onGoToStockConfig={handleGoToStockConfig}
           modelo={createdModelo}
           stock={createdStock}
+        />
+      )}
+
+      {/* Modal de confirmación y error para eliminar modelo */}
+      {showDeleteModal && (
+        <ErrorModal
+          title={
+            deleteError
+              ? undefined
+              : "Confirmar eliminación"
+          }
+          message={
+            deleteError
+              ? deleteError
+              : "¿Seguro que quieres eliminar este modelo? Esta acción no se puede deshacer."
+          }
+          onClose={handleDeleteClose}
+          onConfirm={deleteError ? undefined : handleDeleteConfirm}
+          confirmText="Eliminar"
+          cancelText="Cancelar"
+          showConfirm={!deleteError}
+        />
+      )}
+
+      {/* Modal de éxito al eliminar */}
+      {deleteSuccess && (
+        <ErrorModal
+          title="Eliminación exitosa"
+          message={deleteSuccess}
+          onClose={handleDeleteSuccessClose}
         />
       )}
     </div>
