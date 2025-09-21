@@ -211,7 +211,7 @@ const TableHeader: React.FC<{
   sortConfig: SortConfig
   onSort: (key: string) => void
   onToggleColumn: (key: string) => void
-  onNuevoPedido: () => void
+  onNuevoPedido: (tipo: "pedido" | "presupuesto") => void
   searchQuery: string
   onSearchChange: (e: React.ChangeEvent<HTMLInputElement>) => void
   ocultarEntregados: boolean
@@ -286,12 +286,19 @@ const TableHeader: React.FC<{
             ))}
           </ul>
         </div>
-        <button className="btn btn-primary btn-sm" onClick={onNuevoPedido}>
+        <button className="btn btn-primary btn-sm" onClick={() => onNuevoPedido("pedido")}>
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
           </svg>
           <span className="hidden sm:inline">Nuevo Pedido</span>
           <span className="sm:hidden">Nuevo</span>
+        </button>
+        <button className="btn btn-neutral btn-sm" onClick={() => onNuevoPedido("presupuesto")}>
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          <span className="hidden sm:inline">Nuevo Presupuesto</span>
+          <span className="sm:hidden">Presupuesto</span>
         </button>
       </div>
 
@@ -660,6 +667,9 @@ const TablePedidos: React.FC = () => {
   // Estado para los productos pendientes
   const [pendingProducts, setPendingProducts] = useState<any[]>([])
 
+  // Agrega estado para el tipo de pedido al abrir el modal
+  const [nuevoTipoPedido, setNuevoTipoPedido] = useState<"pedido" | "presupuesto">("pedido");
+
   const handleComentarioClick = (tipo: "cliente" | "producto", pedidoId: string, comentarioActual: string) => {
     setComentarioTipo(tipo)
     setComentarioActual(comentarioActual)
@@ -981,7 +991,10 @@ const sortedPedidos = useMemo(() => {
           sortConfig={sortConfig}
           onSort={handleSort}
           onToggleColumn={toggleColumnVisibility}
-          onNuevoPedido={() => setIsModalOpen(true)}
+          onNuevoPedido={(tipo) => {
+            setNuevoTipoPedido(tipo)
+            setIsModalOpen(true)
+          }}
           searchQuery={searchQuery}
           onSearchChange={handleSearchChange}
           ocultarEntregados={ocultarEntregados}
@@ -1278,6 +1291,7 @@ const sortedPedidos = useMemo(() => {
           onPedidoCreado={handlePedidoCreado}
           remito={nextRemito}
           editarPedido={false}
+          tipoInicial={nuevoTipoPedido} // <-- nuevo prop
         />
       </Modal>
 
@@ -1292,6 +1306,8 @@ const sortedPedidos = useMemo(() => {
             remito={nextRemito}
             editarPedido={true}
             pedido={pedidoParaEditar}
+            // Nuevo prop para mostrar botón "Pasar a Pedido"
+            mostrarPasarAPedido={pedidoParaEditar.tipo === "presupuesto"}
           />
         </Modal>
       )}

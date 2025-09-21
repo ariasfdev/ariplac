@@ -14,6 +14,8 @@ interface NuevoPedidoProps {
   editarPedido: boolean;
   pedido?: any;
   tituloModal?: string;
+  tipoInicial?: "pedido" | "presupuesto";
+  mostrarPasarAPedido?: boolean;
 }
 
 interface Producto {
@@ -36,6 +38,8 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
   editarPedido,
   pedido,
   tituloModal,
+  tipoInicial,
+  mostrarPasarAPedido,
 }) => {
   const { fetchPedidos } = useAppContext();
 
@@ -109,7 +113,9 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
   });
 
   const [showTipoProductoAlert, setShowTipoProductoAlert] = useState<null | {index: number, value: string}>(null);
-  const [tipo, setTipo] = useState<string>(pedido?.tipo ?? "pedido");
+  const [tipo, setTipo] = useState<string>(tipoInicial ?? (pedido?.tipo ?? "pedido"));
+  const [showTipoModal, setShowTipoModal] = useState(false);
+  const [tipoSeleccionado, setTipoSeleccionado] = useState<string>("pedido");
 
   // Cargar datos de stock
   useEffect(() => {
@@ -284,9 +290,9 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
 
       setCurrentTotal(0); // ✅ También reiniciar el total
       setIncluyeInstalacion(false);
-      setTipo("pedido"); // <-- Por defecto, nuevo pedido
+      setTipo(tipoInicial ?? "pedido"); // <-- fuerza el tipo inicial en nuevo
     }
-  }, [editarPedido, pedido]);
+  }, [editarPedido, pedido, tipoInicial]); // <-- agrega tipoInicial como dependencia
 
   // ✅ Nuevo useEffect para cargar datos del stock cuando se está en modo edición
   useEffect(() => {
@@ -630,14 +636,21 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
   };
 
   const handleSubmit = async () => {
+    if (tipo === "presupuesto") {
+      setShowTipoModal(true);
+      return;
+    }
+    await guardarPedido(tipo);
+  };
+
+  // Nueva función para guardar con el tipo seleccionado
+  const guardarPedido = async (tipoGuardar: string) => {
     setIsLoading(true);
     if (!validateForm()) {
       setIsLoading(false);
       return;
     }
-
     const totalEnviado = calcularTotal();
-
     try {
       let response;
       let data: any = {
@@ -659,36 +672,27 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
           totalEnviado - Number(otrosDatos.adelanto || 0),
           0
         ),
-        tipo, // <-- enviar tipo
+        tipo: tipoGuardar, // <-- usa el tipo seleccionado
       };
 
       if (editarPedido && pedido) {
-        // Editando: NO se incluye remito ni fecha_pedido
-
-        console.log(data);
         response = await axios.put(
           `${API_BASE_URL}/pedidos/editar/${pedido.id}`,
           data
         );
-        console.log("Pedido actualizado con éxito:", response.data);
       } else {
-        // Nuevo pedido: SE incluye remito y fecha_pedido
-        console.log(data);
         data = {
           ...data,
           remito,
           fecha_pedido: new Date().toISOString(),
         };
-
         response = await axios.post(`${API_BASE_URL}/pedidos/`, data);
-        console.log("Pedido creado con éxito:", response.data);
       }
 
       fetchPedidos();
       onPedidoCreado();
       onClose();
     } catch (error) {
-      console.error("Error al crear o actualizar el pedido:", error);
       setErrorMessage("Hubo un error al procesar el pedido");
     } finally {
       setIsLoading(false);
@@ -697,27 +701,7 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
 
   return (
     <>
-      {/* Selector elegante de tipo de pedido */}
-      <div className="mb-4">
-        <label className="block mb-2 text-base-content font-bold">Tipo</label>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            className={`btn w-1/2 ${tipo === "pedido" ? "btn-primary" : "btn-outline"}`}
-            onClick={() => setTipo("pedido")}
-          >
-            Pedido
-          </button>
-          <button
-            type="button"
-            className={`btn w-1/2 ${tipo === "presupuesto" ? "btn-primary" : "btn-outline"}`}
-            onClick={() => setTipo("presupuesto")}
-          >
-            Presupuesto
-          </button>
-        </div>
-      </div>
-
+      {/* Elimina los botones de tipo y "Pasar a Pedido" */}
       {/* Título y total en Desktop */}
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-bold text-base-content">
@@ -1240,6 +1224,39 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
           </button>
         )}
       </div>
+
+      {/* Modal para elegir tipo al guardar si es presupuesto */}
+      {showTipoModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-xs w-full mx-4 p-6 flex flex-col gap-4">
+            <h3 className="text-lg font-bold mb-2">¿Guardar como?</h3>
+            <button
+              className="btn btn-primary w-full"
+              onClick={() => {
+                setShowTipoModal(false);
+                guardarPedido("pedido");
+              }}
+            >
+              Pedido
+            </button>
+            <button
+              className="btn btn-neutral w-full"
+              onClick={() => {
+                setShowTipoModal(false);
+                guardarPedido("presupuesto");
+              }}
+            >
+              Presupuesto
+            </button>
+            <button
+              className="btn btn-ghost w-full mt-2"
+              onClick={() => setShowTipoModal(false)}
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Error Modal */}
       {errorMessage && (
