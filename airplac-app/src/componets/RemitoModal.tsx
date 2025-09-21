@@ -65,7 +65,8 @@ function calcularTotal(remito: RemitoData): number {
   const flete = parseFloat(remito.flete || "0");
   const instalacion = parseFloat(remito.valor_instalacion || "0");
   const adicional = parseFloat(remito.adicional || "0");
-  const totalFinal = subtotal - descuentoValor + flete + instalacion + adicional - seña;
+  const totalFinal =
+    subtotal - descuentoValor + flete + instalacion + adicional - seña;
   return totalFinal > 0 ? totalFinal : 0;
 }
 
@@ -141,7 +142,9 @@ const RemitoModal: React.FC<RemitoModalProps> = ({ remitoData, onClose }) => {
 
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
-    doc.text(`Fecha: ${formatDate(new Date())}`, pageWidth - 15, 50, { align: "right" });
+    doc.text(`Fecha: ${formatDate(new Date())}`, pageWidth - 15, 50, {
+      align: "right",
+    });
 
     // --- DATOS DEL CLIENTE (solo cliente, alineado como imagen adjunta) ---
     doc.setDrawColor(0, 0, 0);
@@ -189,7 +192,12 @@ const RemitoModal: React.FC<RemitoModalProps> = ({ remitoData, onClose }) => {
       startY: 96,
       head: [["#", "Modelo", "Tipo Precio", "Cantidad", "Valor m²", "Total"]],
       body: productosBody,
-      styles: { fontSize: 10, cellPadding: 2, font: "helvetica", textColor: [0, 0, 0] },
+      styles: {
+        fontSize: 10,
+        cellPadding: 2,
+        font: "helvetica",
+        textColor: [0, 0, 0],
+      },
       headStyles: {
         fillColor: [255, 255, 255],
         textColor: [0, 0, 0],
@@ -224,45 +232,82 @@ const RemitoModal: React.FC<RemitoModalProps> = ({ remitoData, onClose }) => {
       : 106; // fallback si no hay tabla
     doc.setFont("helvetica", "bold");
     doc.setFontSize(11);
-    doc.text("Resumen de Totales", pageWidth / 2, currentY, { align: "center" });
+    doc.text("Resumen de Totales", pageWidth / 2, currentY, {
+      align: "center",
+    });
 
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
 
     currentY += 8;
     doc.text("Subtotal productos:", pageWidth / 2 - 40, currentY);
-    doc.text(formatMoneda(calcularSubtotal(editableRemito)), pageWidth / 2 + 40, currentY, { align: "right" });
+    doc.text(
+      formatMoneda(calcularSubtotal(editableRemito)),
+      pageWidth / 2 + 40,
+      currentY,
+      { align: "right" }
+    );
 
     if (parseFloat(editableRemito.descuento || "0") > 0) {
       currentY += 6;
-      doc.text(`Descuento (${editableRemito.descuento}%) :`, pageWidth / 2 - 40, currentY);
+      doc.text(
+        `Descuento (${editableRemito.descuento}%) :`,
+        pageWidth / 2 - 40,
+        currentY
+      );
       const subtotal = calcularSubtotal(editableRemito);
-      const descuentoValor = subtotal * (parseFloat(editableRemito.descuento || "0") / 100);
-      doc.text(`-${formatMoneda(descuentoValor)}`, pageWidth / 2 + 40, currentY, { align: "right" });
+      const descuentoValor =
+        subtotal * (parseFloat(editableRemito.descuento || "0") / 100);
+      doc.text(
+        `-${formatMoneda(descuentoValor)}`,
+        pageWidth / 2 + 40,
+        currentY,
+        { align: "right" }
+      );
     }
 
     if (parseFloat(editableRemito.seña || "0") > 0) {
       currentY += 6;
       doc.text("Seña:", pageWidth / 2 - 40, currentY);
-      doc.text(`-${formatMoneda(parseFloat(editableRemito.seña || "0"))}`, pageWidth / 2 + 40, currentY, { align: "right" });
+      doc.text(
+        `-${formatMoneda(parseFloat(editableRemito.seña || "0"))}`,
+        pageWidth / 2 + 40,
+        currentY,
+        { align: "right" }
+      );
     }
 
     if (parseFloat(editableRemito.flete || "0") > 0) {
       currentY += 6;
       doc.text("Flete:", pageWidth / 2 - 40, currentY);
-      doc.text(formatMoneda(parseFloat(editableRemito.flete || "0")), pageWidth / 2 + 40, currentY, { align: "right" });
+      doc.text(
+        formatMoneda(parseFloat(editableRemito.flete || "0")),
+        pageWidth / 2 + 40,
+        currentY,
+        { align: "right" }
+      );
     }
 
     if (parseFloat(editableRemito.valor_instalacion || "0") > 0) {
       currentY += 6;
       doc.text("Instalación:", pageWidth / 2 - 40, currentY);
-      doc.text(formatMoneda(parseFloat(editableRemito.valor_instalacion || "0")), pageWidth / 2 + 40, currentY, { align: "right" });
+      doc.text(
+        formatMoneda(parseFloat(editableRemito.valor_instalacion || "0")),
+        pageWidth / 2 + 40,
+        currentY,
+        { align: "right" }
+      );
     }
 
     if (parseFloat(editableRemito.adicional || "0") > 0) {
       currentY += 6;
       doc.text("Adicional:", pageWidth / 2 - 40, currentY);
-      doc.text(formatMoneda(parseFloat(editableRemito.adicional || "0")), pageWidth / 2 + 40, currentY, { align: "right" });
+      doc.text(
+        formatMoneda(parseFloat(editableRemito.adicional || "0")),
+        pageWidth / 2 + 40,
+        currentY,
+        { align: "right" }
+      );
     }
 
     // Línea separadora
@@ -276,13 +321,23 @@ const RemitoModal: React.FC<RemitoModalProps> = ({ remitoData, onClose }) => {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
     doc.text("TOTAL:", pageWidth / 2 - 40, currentY);
-    doc.text(formatMoneda(calcularTotal(editableRemito)), pageWidth / 2 + 40, currentY, { align: "right" });
+    doc.text(
+      formatMoneda(calcularTotal(editableRemito)),
+      pageWidth / 2 + 40,
+      currentY,
+      { align: "right" }
+    );
 
     // --- ÁREA DE FIRMA Y MENSAJE EN EL MARGEN INFERIOR ---
     const footerY = pageHeight - 25;
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
-    doc.text("Firma del cliente: ____________________________", pageWidth - 20, footerY, { align: "right" });
+    doc.text(
+      "Firma del cliente: ____________________________",
+      pageWidth - 20,
+      footerY,
+      { align: "right" }
+    );
 
     doc.setFontSize(8);
     doc.text(
@@ -297,7 +352,7 @@ const RemitoModal: React.FC<RemitoModalProps> = ({ remitoData, onClose }) => {
 
   // Función para obtener el valor del precio según id_precio y método de pago
   const getValorM2 = (prod: Producto, metodo_pago?: string) => {
-    let valor = prod.valorM2;
+    let valor = prod.valorM2 || 0;
     // Buscar en preciosModelo si existe
     if (prod.id_precio && prod.preciosModelo && prod.preciosModelo.length > 0) {
       const precioObj = prod.preciosModelo.find(
@@ -305,18 +360,18 @@ const RemitoModal: React.FC<RemitoModalProps> = ({ remitoData, onClose }) => {
       );
       if (precioObj) {
         if (metodo_pago === "credito") {
-          valor = precioObj.precioTarjeta ?? precioObj.precio;
+          valor = precioObj.precioTarjeta ?? precioObj.precio ?? 0;
         } else {
-          valor = precioObj.precio;
+          valor = precioObj.precio ?? 0;
         }
       }
     } else {
       // Si no hay preciosModelo, usar precioTarjeta si corresponde
       if (metodo_pago === "credito" && (prod as any).precioTarjeta) {
-        valor = (prod as any).precioTarjeta;
+        valor = (prod as any).precioTarjeta || 0;
       }
     }
-    return valor;
+    return valor || 0;
   };
 
   if (!editableRemito) return null;
@@ -500,7 +555,10 @@ const RemitoModal: React.FC<RemitoModalProps> = ({ remitoData, onClose }) => {
                           : 0;
                         const redondeo = (prod as any).total_redondeo || 0;
                         // Usar getValorM2 para mostrar el valor correcto
-                        const valorUnitario = getValorM2(prod as Producto, editableRemito?.metodo_pago);
+                        const valorUnitario = getValorM2(
+                          prod as Producto,
+                          editableRemito?.metodo_pago
+                        );
                         const total = prod.cantidad * valorUnitario;
 
                         return (
@@ -511,9 +569,15 @@ const RemitoModal: React.FC<RemitoModalProps> = ({ remitoData, onClose }) => {
                               {/* Mostrar el tipo de precio en vez de materiales */}
                               {
                                 // Si el producto tiene nombre_precio, mostrarlo
-                                prod.nombre_precio
-                                  ? <span className="font-bold text-gray-500">{prod.nombre_precio}</span>
-                                  : <span className="text-xs text-base-content/60">Sin tipo de precio</span>
+                                prod.nombre_precio ? (
+                                  <span className="font-bold text-gray-500">
+                                    {prod.nombre_precio}
+                                  </span>
+                                ) : (
+                                  <span className="text-xs text-base-content/60">
+                                    Sin tipo de precio
+                                  </span>
+                                )
                               }
                             </td>
                             <td className="text-center">{prod.cantidad}</td>
@@ -528,65 +592,66 @@ const RemitoModal: React.FC<RemitoModalProps> = ({ remitoData, onClose }) => {
                       })}
                       {/* Flete */}
                       {editableRemito.flete &&
-                        parseFloat(editableRemito.flete) > 0 ? (
-                          <tr>
-                            <td className="font-bold">
-                              {editableRemito.productos.length + 1}
-                            </td>
-                            <td colSpan={3} className="font-bold">
-                              FLETE
-                            </td>
-                            <td className="text-right">
-                              {formatMoneda(parseFloat(editableRemito.flete))}
-                            </td>
-                            <td className="text-right font-bold">
-                              {formatMoneda(parseFloat(editableRemito.flete))}
-                            </td>
-                          </tr>
-                        ) : null}
+                      parseFloat(editableRemito.flete) > 0 ? (
+                        <tr>
+                          <td className="font-bold">
+                            {editableRemito.productos.length + 1}
+                          </td>
+                          <td colSpan={3} className="font-bold">
+                            FLETE
+                          </td>
+                          <td className="text-right">
+                            {formatMoneda(parseFloat(editableRemito.flete))}
+                          </td>
+                          <td className="text-right font-bold">
+                            {formatMoneda(parseFloat(editableRemito.flete))}
+                          </td>
+                        </tr>
+                      ) : null}
                       {/* Instalación */}
                       {editableRemito.valor_instalacion &&
-                        parseFloat(editableRemito.valor_instalacion) > 0 ? (
-                          <tr className="bg-info text-info-content">
-                            <td className="font-bold">
-                              {editableRemito.productos.length +
-                                (editableRemito.flete ? 2 : 1)}
-                            </td>
-                            <td colSpan={3} className="font-bold">
-                              INSTALACIÓN
-                            </td>
-                            <td className="text-right">
-                              {formatMoneda(
-                                parseFloat(editableRemito.valor_instalacion)
-                              )}
-                            </td>
-                            <td className="text-right font-bold">
-                              {formatMoneda(
-                                parseFloat(editableRemito.valor_instalacion)
-                              )}
-                            </td>
-                          </tr>
-                        ) : null}
+                      parseFloat(editableRemito.valor_instalacion) > 0 ? (
+                        <tr className="bg-info text-info-content">
+                          <td className="font-bold">
+                            {editableRemito.productos.length +
+                              (editableRemito.flete ? 2 : 1)}
+                          </td>
+                          <td colSpan={3} className="font-bold">
+                            INSTALACIÓN
+                          </td>
+                          <td className="text-right">
+                            {formatMoneda(
+                              parseFloat(editableRemito.valor_instalacion)
+                            )}
+                          </td>
+                          <td className="text-right font-bold">
+                            {formatMoneda(
+                              parseFloat(editableRemito.valor_instalacion)
+                            )}
+                          </td>
+                        </tr>
+                      ) : null}
                       {/* Adicional */}
                       {editableRemito.adicional &&
-                        parseFloat(editableRemito.adicional) > 0 ? (
-                          <tr>
-                            <td className="font-bold">
-                              {editableRemito.productos.length +
-                                (editableRemito.flete ? 1 : 0) +
-                                (editableRemito.valor_instalacion ? 1 : 0) + 1}
-                            </td>
-                            <td colSpan={3} className="font-bold">
-                              ADICIONAL
-                            </td>
-                            <td className="text-right">
-                              {formatMoneda(parseFloat(editableRemito.adicional))}
-                            </td>
-                            <td className="text-right font-bold">
-                              {formatMoneda(parseFloat(editableRemito.adicional))}
-                            </td>
-                          </tr>
-                        ) : null}
+                      parseFloat(editableRemito.adicional) > 0 ? (
+                        <tr>
+                          <td className="font-bold">
+                            {editableRemito.productos.length +
+                              (editableRemito.flete ? 1 : 0) +
+                              (editableRemito.valor_instalacion ? 1 : 0) +
+                              1}
+                          </td>
+                          <td colSpan={3} className="font-bold">
+                            ADICIONAL
+                          </td>
+                          <td className="text-right">
+                            {formatMoneda(parseFloat(editableRemito.adicional))}
+                          </td>
+                          <td className="text-right font-bold">
+                            {formatMoneda(parseFloat(editableRemito.adicional))}
+                          </td>
+                        </tr>
+                      ) : null}
                     </tbody>
                   </table>
                 </div>
@@ -646,7 +711,9 @@ const RemitoModal: React.FC<RemitoModalProps> = ({ remitoData, onClose }) => {
                   <div className="stat">
                     <div className="stat-title">Adicional</div>
                     <div className="stat-value text-lg text-accent">
-                      {formatMoneda(parseFloat(editableRemito.adicional || "0"))}
+                      {formatMoneda(
+                        parseFloat(editableRemito.adicional || "0")
+                      )}
                     </div>
                   </div>
                   <div className="stat bg-primary text-primary-content">
@@ -827,9 +894,9 @@ const RemitoModal: React.FC<RemitoModalProps> = ({ remitoData, onClose }) => {
                       value={
                         editableRemito.adicional &&
                         parseFloat(editableRemito.adicional) > 0
-                          ? `$${parseFloat(editableRemito.adicional).toLocaleString(
-                              "es-AR"
-                            )}`
+                          ? `$${parseFloat(
+                              editableRemito.adicional
+                            ).toLocaleString("es-AR")}`
                           : ""
                       }
                       onChange={(e) => {
@@ -924,4 +991,3 @@ const RemitoModal: React.FC<RemitoModalProps> = ({ remitoData, onClose }) => {
 };
 
 export default RemitoModal;
-

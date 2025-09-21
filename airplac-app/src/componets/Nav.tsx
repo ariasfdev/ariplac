@@ -97,7 +97,7 @@ const Nav: React.FC<NavProps> = ({ isNavVisible, setIsNavVisible }) => {
       description: "Catálogo de modelos y productos",
     },
     {
-      path: "/home/admin",
+      path: "/home/trazabilidad",
       label: "Control Stock",
       icon: (
         <svg
