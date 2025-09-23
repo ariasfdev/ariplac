@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import NuevoStock from "../componets/NuevoStock";
-import AgregarStock from "../componets/AgregarStock";
+import AgregarStockMejorado from "../componets/AgregarStockMejorado";
 import ModificarPrecio from "../componets/ModificarPrecio";
 import { MoreVertical } from "lucide-react";
 import { API_BASE_URL } from "../config";
@@ -146,22 +146,45 @@ const Stock: React.FC = () => {
   };
 
   const handleGuardarProduccion = async (
-    cantidad: number,
+    tipo: "add" | "subtract",
+    valor: number,
     responsable: string
   ) => {
     try {
       if (selectedStock) {
-        await axios.post(`${API_BASE_URL}/stock/actualizar-stock`, {
-          idStock: selectedStock._id,
-          cantidad,
-          responsable,
-        });
+        let endpoint = "";
+        let payload: any = { responsable };
+
+        switch (tipo) {
+          case "add":
+            endpoint = `${API_BASE_URL}/stock/add/${selectedStock._id}`;
+            payload.cantidad = valor;
+            break;
+          case "subtract":
+            endpoint = `${API_BASE_URL}/stock/subtract/${selectedStock._id}`;
+            payload.cantidad = valor;
+            break;
+        }
+
+        const response = await axios.put(endpoint, payload);
+        console.log("Respuesta del servidor:", response.data);
+        
         setIsAgregarStockOpen(false);
         fetchStocks();
-        setSuccessMessage("Stock creado/actualizado exitosamente.");
+        
+        // Mensaje personalizado según el tipo de operación
+        const operacionTexto = 
+          tipo === "add" ? `incrementado en ${valor}` : `reducido en ${valor}`;
+        
+        setSuccessMessage(`Stock ${operacionTexto} exitosamente.`);
       }
-    } catch (err) {
-      console.error("Error al agregar producción:", err);
+    } catch (err: any) {
+      console.error("Error al modificar el stock:", err);
+      if (err.response?.data?.message) {
+        alert(`Error: ${err.response.data.message}`);
+      } else {
+        alert("Error al modificar el stock");
+      }
     }
   };
 
@@ -1151,10 +1174,22 @@ const Stock: React.FC = () => {
         </div>
       </div>
 
-      <AgregarStock
+      <AgregarStockMejorado
         isOpen={isAgregarStockOpen}
         onClose={() => setIsAgregarStockOpen(false)}
         idStock={selectedStock?._id || ""}
+        stockActual={selectedStock?.stock || 0}
+        stockReservado={
+          ((selectedStock?.stock_reservado?.pedidos
+            ?.filter((pedido) => pedido.estado === "reservado")
+            .reduce((total, pedido) => total + pedido.cantidad_placas, 0)) || 0) +
+          ((selectedStock?.stock_reservado?.pedidos
+            ?.filter((pedido) => pedido.estado === "pendiente")
+            .reduce((total, pedido) => total + pedido.cantidad_placas, 0)) || 0)
+        }
+        unidad={selectedStock?.unidad || ""}
+        producto={selectedStock?.producto || ""}
+        modelo={selectedStock?.modelo || ""}
         onSave={handleGuardarProduccion}
       />
 

@@ -314,10 +314,10 @@ const NuevoStock: React.FC<NuevoStockProps> = ({
               </select>
 
               <label className="block mb-2">
-                Cantidad Actual:
+                Cantidad Inicial:
                 {(formData.stock || 0) > 0 && formData.stockActivo && (
                   <span className="ml-2 text-xs text-orange-600 font-medium">
-                    (Bloqueado)
+                    (Solo lectura)
                   </span>
                 )}
               </label>
@@ -336,12 +336,19 @@ const NuevoStock: React.FC<NuevoStockProps> = ({
                   )
                 }
                 disabled={(formData.stock || 0) > 0 && formData.stockActivo}
+                placeholder="Cantidad inicial del producto"
               />
               {(formData.stock || 0) > 0 && formData.stockActivo && (
-                <p className="text-sm text-orange-600 mb-2">
-                  ⚠️ No se puede editar la cantidad actual cuando hay stock
-                  disponible. Use "Agregar Stock" para modificar la cantidad.
-                </p>
+                <div className="bg-blue-50 border border-blue-200 p-3 rounded-lg mb-4">
+                  <p className="text-sm text-blue-700 font-medium mb-1">
+                    💡 Producto con stock existente
+                  </p>
+                  <p className="text-xs text-blue-600">
+                    Para modificar la cantidad de stock existente, vaya a la sección 
+                    <strong> Stock</strong> y use la opción <strong>"Agregar Stock"</strong> 
+                    donde podrá establecer valores fijos, sumar o restar cantidades.
+                  </p>
+                </div>
               )}
 
               <label className="block mb-2">Unidad:</label>
