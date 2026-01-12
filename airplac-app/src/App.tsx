@@ -17,7 +17,6 @@ import Trazabilidad from "./pages/trazabilidad";
 const App: React.FC = () => {
   return (
     <AppProvider>
-      s
       <Router>
         <Routes>
           {/* Redirecciona "/" a "/home/pedidos" */}

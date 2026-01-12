@@ -115,6 +115,7 @@ const ImportarPedido: React.FC = () => {
                 nombre: row.Cliente || "",
                 direccion: row.Direccion || "",
                 contacto: row.Contacto || "",
+                dni_cuil: row.DNI_CUIL || "",
               },
               productos: [producto],
               estado: row.Estado || "pendiente",

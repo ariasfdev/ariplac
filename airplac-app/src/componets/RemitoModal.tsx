@@ -113,7 +113,8 @@ const RemitoModal: React.FC<RemitoModalProps> = ({ remitoData, onClose }) => {
     return `${day}/${month}/${year}`;
   }
 
-  const tipoRemito = (editableRemito as any)?.tipo === "presupuesto" ? "presupuesto" : "pedido";
+  const tipoRemito =
+    (editableRemito as any)?.tipo === "presupuesto" ? "presupuesto" : "pedido";
 
   const generatePDF = () => {
     if (!editableRemito) return;
@@ -121,86 +122,88 @@ const RemitoModal: React.FC<RemitoModalProps> = ({ remitoData, onClose }) => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 15;
 
     // --- ENCABEZADO PROFESIONAL ---
     doc.setFont("helvetica", "bold");
     doc.setFontSize(20);
-    doc.text("AIR PLAC", 15, 18);
+    doc.text("AIR PLAC", margin, 18);
 
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
-    doc.text("G. Marconi 3749 - Isidro Casanova, CP 1765", 15, 26);
-    doc.text("Tel: (011) 1234-5678 | Email: airplac.deco@gmail.com", 15, 32);
-    doc.text("CUIT: 20-42.213.808-1 | Responsable Monotributo", 15, 38);
+    doc.text("G. Marconi 3747 - Isidro Casanova, CP 1765", margin, 26);
+    doc.text(
+      "Tel: (011) 11 5485-3893 | Email: airplac.deco@gmail.com",
+      margin,
+      32
+    );
+    doc.text("CUIT: 20-42.213.808-1 | Responsable Monotributo", margin, 38);
 
-    // Línea separadora
+    // Separador
     doc.setDrawColor(0, 0, 0);
     doc.setLineWidth(0.5);
-    doc.line(15, 41, pageWidth - 15, 41);
+    doc.line(margin, 41, pageWidth - margin, 41);
 
-    // --- Remito y datos principales ---
+    // --- TIPO (R/P) + TEXTO DERECHA ---
+    const tipo =
+      (editableRemito as any)?.tipo === "presupuesto"
+        ? "Presupuesto"
+        : "Remito";
+    const abreviado = tipo === "Presupuesto" ? "P" : "R";
+
+    // Letra grande al medio
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(14);
-    if (tipoRemito === "presupuesto") {
-      doc.text(`Presupuesto`, 15, 50);
-    } else {
-      doc.text(`Remito Nº: ${editableRemito.remito}`, 15, 50);
-    }
+    doc.setFontSize(30);
+    doc.text(abreviado, pageWidth / 2, 30, { align: "center" });
 
+    // Texto arriba a la derecha + fecha debajo
+    doc.setFontSize(14);
+    if (tipo === "Remito") {
+      doc.text(`${tipo} Nº: ${editableRemito.remito}`, pageWidth - margin, 20, {
+        align: "right",
+      });
+    } else {
+      doc.text(tipo, pageWidth - margin, 20, { align: "right" });
+    }
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
-    doc.text(`Fecha: ${formatDate(new Date())}`, pageWidth - 15, 50, {
+    doc.text(`Fecha: ${formatDate(new Date())}`, pageWidth - margin, 28, {
       align: "right",
     });
 
-    // --- DATOS DEL CLIENTE (en dos columnas) ---
+    // --- DATOS DEL CLIENTE ---
     doc.setDrawColor(0, 0, 0);
     doc.setLineWidth(0.3);
-    doc.setFillColor(245, 246, 247); // fondo suave
-    doc.rect(15, 56, pageWidth - 30, 30, "F");
+    doc.setFillColor(245, 246, 247);
+    doc.rect(margin, 50, pageWidth - margin * 2, 30, "F");
 
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
-    doc.text("DATOS DEL CLIENTE", 20, 63);
+    doc.text("DATOS DEL CLIENTE", margin + 5, 58);
 
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
+    doc.text(`Cliente: ${editableRemito.cliente}`, margin + 5, 66);
+    doc.text(`Dirección: ${editableRemito.direccion}`, margin + 5, 72);
+    doc.text(`Contacto: ${editableRemito.contacto}`, margin + 5, 78);
+    doc.text(`DNI/CUIL: ${editableRemito.dni_cuil}`, pageWidth - 90, 66);
 
-    // Columna izquierda
-    doc.text(`Cliente: ${editableRemito.cliente}`, 20, 71);
-    doc.text(`Dirección: ${editableRemito.direccion}`, 20, 77);
-    doc.text(`Contacto: ${editableRemito.contacto}`, 20, 83);
-
-    // Columna derecha
-    doc.text(`Fecha: ${formatDate(new Date())}`, pageWidth - 90, 71);
-    doc.text("Condición: Contado", pageWidth - 90, 77);
-    doc.text(`DNI/CUIL: ${editableRemito.dni_cuil}`, pageWidth - 90, 83);
-
-    // --- TABLA DE PRODUCTOS CENTRADA ---
-    doc.setDrawColor(0, 0, 0);
-    doc.setLineWidth(0.3);
-    doc.line(15, 92, pageWidth - 15, 92);
-
-    const tableWidth = 12 + 38 + 38 + 22 + 28 + 28;
-    const tableMargin = (pageWidth - tableWidth) / 2;
-
-    const productosBody = editableRemito.productos.map((prod, idx) => {
-      const valorUnitario = getValorM2(prod, editableRemito?.metodo_pago);
-      const total = prod.cantidad * valorUnitario;
-      return [
-        (idx + 1).toString(),
-        prod.modelo,
-        prod.nombre_precio ? prod.nombre_precio : "Sin tipo de precio",
-        prod.cantidad.toString(),
-        formatMoneda(valorUnitario),
-        formatMoneda(total),
-      ];
-    });
-
+    // --- TABLA DE PRODUCTOS ---
     autoTable(doc, {
-      startY: 96,
+      startY: 90,
       head: [["#", "Modelo", "Tipo Precio", "Cantidad", "Valor m²", "Total"]],
-      body: productosBody,
+      body: editableRemito.productos.map((prod, idx) => {
+        const valorUnitario = getValorM2(prod, editableRemito?.metodo_pago);
+        const total = prod.cantidad * valorUnitario;
+        return [
+          (idx + 1).toString(),
+          prod.modelo,
+          prod.nombre_precio ? prod.nombre_precio : "Sin tipo de precio",
+          prod.cantidad.toString(),
+          formatMoneda(valorUnitario),
+          formatMoneda(total),
+        ];
+      }),
       styles: {
         fontSize: 10,
         cellPadding: 2,
@@ -211,155 +214,98 @@ const RemitoModal: React.FC<RemitoModalProps> = ({ remitoData, onClose }) => {
         fillColor: [255, 255, 255],
         textColor: [0, 0, 0],
         fontStyle: "bold",
-        halign: "center",
-        fontSize: 11,
-        lineWidth: 0.3,
-        lineColor: [0, 0, 0],
       },
-      bodyStyles: {
-        halign: "center",
-        fontSize: 10,
-        textColor: [0, 0, 0],
-      },
-      columnStyles: {
-        0: { halign: "center", cellWidth: 12 },
-        1: { halign: "left", cellWidth: 38 },
-        2: { halign: "left", cellWidth: 38 },
-        3: { halign: "center", cellWidth: 22 },
-        4: { halign: "right", cellWidth: 28 },
-        5: { halign: "right", cellWidth: 28 },
-      },
-      margin: { left: tableMargin, right: tableMargin },
       theme: "grid",
-      alternateRowStyles: { fillColor: [255, 255, 255] },
     });
 
-    // --- RESUMEN DE TOTALES ---
-    // Usar la posición final de la tabla para colocar el resumen debajo
-    let currentY = (doc as any).lastAutoTable?.finalY
-      ? (doc as any).lastAutoTable.finalY + 10
-      : (doc as any).autoTable?.previous?.finalY
-      ? (doc as any).autoTable.previous.finalY + 10
-      : 106; // fallback si no hay tabla
+    // --- IR A LA ÚLTIMA PÁGINA PARA PONER TOTALES AL PIE ---
+    const lastPage = (doc as any).getNumberOfPages();
+    (doc as any).setPage(lastPage);
 
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(11);
-    doc.text("Resumen de Totales", pageWidth / 2, currentY, {
-      align: "center",
-    });
+    // Valores para el desglose (mismo criterio que venías usando)
+    const sub = calcularSubtotal(editableRemito);
+    const descPerc = parseFloat(editableRemito.descuento || "0");
+    const descVal = sub * (descPerc / 100);
+    const senia = parseFloat(editableRemito.seña || "0");
+    const flete = parseFloat(editableRemito.flete || "0");
+    const inst = parseFloat(editableRemito.valor_instalacion || "0");
+    const adicional = parseFloat(editableRemito.adicional || "0");
+    const totalFinal = calcularTotal(editableRemito);
 
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
+    // Armar filas dinámicas del desglose
+    const rows: Array<{ label: string; value: string; bold?: boolean }> = [];
+    rows.push({ label: "Subtotal productos:", value: formatMoneda(sub) });
+    if (descPerc > 0)
+      rows.push({
+        label: `Descuento (${descPerc}%) :`,
+        value: `-${formatMoneda(descVal)}`,
+      });
+    if (senia > 0)
+      rows.push({ label: "Seña:", value: `-${formatMoneda(senia)}` });
+    if (flete > 0) rows.push({ label: "Flete:", value: formatMoneda(flete) });
+    if (inst > 0)
+      rows.push({ label: "Instalación:", value: formatMoneda(inst) });
+    if (adicional > 0)
+      rows.push({ label: "Adicional:", value: formatMoneda(adicional) });
 
-    currentY += 8;
-    doc.text("Subtotal productos:", pageWidth / 2 - 40, currentY);
-    doc.text(
-      formatMoneda(calcularSubtotal(editableRemito)),
-      pageWidth / 2 + 40,
-      currentY,
-      { align: "right" }
-    );
+    // Altura dinámica del recuadro según filas + separador + TOTAL
+    const lineH = 6;
+    const innerPadY = 6;
+    const sepH = 6;
+    const totalRows = rows.length + 1; // +1 por la línea TOTAL
+    const boxHeight = innerPadY * 2 + rows.length * lineH + sepH + lineH + 2;
+    const boxWidth = 90;
+    const boxX = pageWidth - margin - boxWidth;
+    const boxY =
+      pageHeight - margin - 20 /* firma */ - 8 /* espacio */ - boxHeight;
 
-    if (parseFloat(editableRemito.descuento || "0") > 0) {
-      currentY += 6;
-      doc.text(
-        `Descuento (${editableRemito.descuento}%) :`,
-        pageWidth / 2 - 40,
-        currentY
-      );
-      const subtotal = calcularSubtotal(editableRemito);
-      const descuentoValor =
-        subtotal * (parseFloat(editableRemito.descuento || "0") / 100);
-      doc.text(
-        `-${formatMoneda(descuentoValor)}`,
-        pageWidth / 2 + 40,
-        currentY,
-        { align: "right" }
-      );
-    }
-
-    if (parseFloat(editableRemito.seña || "0") > 0) {
-      currentY += 6;
-      doc.text("Seña:", pageWidth / 2 - 40, currentY);
-      doc.text(
-        `-${formatMoneda(parseFloat(editableRemito.seña || "0"))}`,
-        pageWidth / 2 + 40,
-        currentY,
-        { align: "right" }
-      );
-    }
-
-    if (parseFloat(editableRemito.flete || "0") > 0) {
-      currentY += 6;
-      doc.text("Flete:", pageWidth / 2 - 40, currentY);
-      doc.text(
-        formatMoneda(parseFloat(editableRemito.flete || "0")),
-        pageWidth / 2 + 40,
-        currentY,
-        { align: "right" }
-      );
-    }
-
-    if (parseFloat(editableRemito.valor_instalacion || "0") > 0) {
-      currentY += 6;
-      doc.text("Instalación:", pageWidth / 2 - 40, currentY);
-      doc.text(
-        formatMoneda(parseFloat(editableRemito.valor_instalacion || "0")),
-        pageWidth / 2 + 40,
-        currentY,
-        { align: "right" }
-      );
-    }
-
-    if (parseFloat(editableRemito.adicional || "0") > 0) {
-      currentY += 6;
-      doc.text("Adicional:", pageWidth / 2 - 40, currentY);
-      doc.text(
-        formatMoneda(parseFloat(editableRemito.adicional || "0")),
-        pageWidth / 2 + 40,
-        currentY,
-        { align: "right" }
-      );
-    }
-
-    // Línea separadora
-    currentY += 8;
+    // Recuadro de totales (derecha, al pie)
     doc.setDrawColor(0, 0, 0);
     doc.setLineWidth(0.3);
-    doc.line(pageWidth / 2 - 40, currentY, pageWidth / 2 + 40, currentY);
+    doc.setFillColor(255, 255, 255);
+    doc.rect(boxX, boxY, boxWidth, boxHeight, "S");
 
-    // Total final
-    currentY += 8;
+    // Dibujar filas del desglose
+    let y = boxY + innerPadY + 2;
+    rows.forEach((r) => {
+      doc.setFont("helvetica", r.bold ? "bold" : "normal");
+      doc.setFontSize(10);
+      doc.text(r.label, boxX + 4, y);
+      doc.text(r.value, boxX + boxWidth - 4, y, { align: "right" });
+      y += lineH;
+    });
+
+    // Separador y TOTAL
+    doc.line(boxX + 4, y, boxX + boxWidth - 4, y);
+    y += sepH;
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
-    doc.text("TOTAL:", pageWidth / 2 - 40, currentY);
-    doc.text(
-      formatMoneda(calcularTotal(editableRemito)),
-      pageWidth / 2 + 40,
-      currentY,
-      { align: "right" }
-    );
+    doc.text("TOTAL:", boxX + 4, y);
+    doc.text(formatMoneda(totalFinal), boxX + boxWidth - 4, y, {
+      align: "right",
+    });
 
-    // --- ÁREA DE FIRMA Y MENSAJE EN EL MARGEN INFERIOR ---
-    const footerY = pageHeight - 25;
+    // --- FIRMA (siempre al pie) ---
+    const firmaY = pageHeight - margin - 5;
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
     doc.text(
       "Firma del cliente: ____________________________",
-      pageWidth - 20,
-      footerY,
+      pageWidth - margin,
+      firmaY,
       { align: "right" }
     );
 
+    // --- LEYENDA (izquierda, más abajo) ---
     doc.setFontSize(8);
     doc.text(
       "Este documento es un remito de entrega de mercaderías. El cliente confirma la recepción de los productos listados.",
-      20,
-      pageHeight - 15,
-      { align: "left" }
+      margin + 5,
+      pageHeight - margin / 2, // más arriba de la base, ocupa media hoja
+      { maxWidth: pageWidth / 2 } // limita ancho para que no invada la firma
     );
 
-    doc.save(`Remito_${editableRemito.remito}.pdf`);
+    doc.save(`${tipo}_${editableRemito.remito}.pdf`);
   };
 
   // Función para obtener el valor del precio según id_precio y método de pago
@@ -515,8 +461,13 @@ const RemitoModal: React.FC<RemitoModalProps> = ({ remitoData, onClose }) => {
                   <div className="stat bg-base-100 rounded-lg">
                     <div className="stat-title">DNI/CUIL</div>
                     <div className="stat-value text-lg">
-                      {typeof editableRemito.cliente === "object" && editableRemito.cliente !== null && "dni_cuil" in editableRemito.cliente
-                        ? (editableRemito.cliente as { dni_cuil?: string }).dni_cuil || editableRemito.dni_cuil || ""
+                      {typeof editableRemito.cliente === "object" &&
+                      editableRemito.cliente !== null &&
+                      "dni_cuil" in editableRemito.cliente
+                        ? (editableRemito.cliente as { dni_cuil?: string })
+                            .dni_cuil ||
+                          editableRemito.dni_cuil ||
+                          ""
                         : editableRemito.dni_cuil || ""}
                     </div>
                   </div>
@@ -524,9 +475,10 @@ const RemitoModal: React.FC<RemitoModalProps> = ({ remitoData, onClose }) => {
                     <div className="stat-title">Dirección</div>
                     <div className="stat-value text-lg">
                       {typeof editableRemito.cliente === "object" &&
-                        editableRemito.cliente !== null &&
-                        "direccion" in editableRemito.cliente
-                        ? (editableRemito.cliente as { direccion?: string }).direccion || editableRemito.direccion
+                      editableRemito.cliente !== null &&
+                      "direccion" in editableRemito.cliente
+                        ? (editableRemito.cliente as { direccion?: string })
+                            .direccion || editableRemito.direccion
                         : editableRemito.direccion}
                     </div>
                   </div>
@@ -534,9 +486,10 @@ const RemitoModal: React.FC<RemitoModalProps> = ({ remitoData, onClose }) => {
                     <div className="stat-title">Contacto</div>
                     <div className="stat-value text-lg">
                       {typeof editableRemito.cliente === "object" &&
-                        editableRemito.cliente !== null &&
-                        "contacto" in editableRemito.cliente
-                        ? (editableRemito.cliente as { contacto?: string }).contacto || editableRemito.contacto
+                      editableRemito.cliente !== null &&
+                      "contacto" in editableRemito.cliente
+                        ? (editableRemito.cliente as { contacto?: string })
+                            .contacto || editableRemito.contacto
                         : editableRemito.contacto}
                     </div>
                   </div>
@@ -824,7 +777,9 @@ const RemitoModal: React.FC<RemitoModalProps> = ({ remitoData, onClose }) => {
                     type="text"
                     className="input input-bordered w-full"
                     value={editableRemito.dni_cuil || ""}
-                    onChange={(e) => handleInputChange("dni_cuil", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("dni_cuil", e.target.value)
+                    }
                   />
                 </div>
 

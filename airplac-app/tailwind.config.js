@@ -5,6 +5,6 @@ module.exports = {
   },
   plugins: [require('daisyui')],
   daisyui: {
-    themes: ["pastel", "dark", "synthwave","luxury","coffee","cyberpunk","caramellatte"],
+    themes: ["pastel", "dark", "synthwave","luxury","coffee","cyberpunk","corporate","bumblebee"],
   }, // Agrega DaisyUI como plugin
 };

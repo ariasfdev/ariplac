@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import Modal from "./Modal";
 import ErrorModal from "./ErrorModal";
 import SuccessModal from "./SuccessModal";
-import { FaDollarSign, FaPercent } from "react-icons/fa";
+import ConfirmActionModal from "./ConfirmActionModal";
+import { FaDollarSign, FaPercent, FaTrash } from "react-icons/fa";
 import axios from "axios";
 import { API_BASE_URL } from "../config";
 
@@ -59,6 +60,10 @@ const ModificarPrecio: React.FC<ModificarPrecioProps> = ({
   });
   const [preciosExistentes, setPreciosExistentes] = useState<Precio[]>([]);
   const [isNuevoPrecio, setIsNuevoPrecio] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [precioToDelete, setPrecioToDelete] = useState<Precio | null>(null);
+  const [ganancia, setGanancia] = useState<number | undefined>(undefined);
+  const [gananciaInput, setGananciaInput] = useState<string>("");
 
   useEffect(() => {
     if (modelo?._id) {
@@ -73,6 +78,8 @@ const ModificarPrecio: React.FC<ModificarPrecioProps> = ({
       setActiveSection(0);
       setErrorMessage("");
       setSuccessMessage("");
+      setGanancia(undefined);
+      setGananciaInput("");
     }
   }, [isOpen]);
 
@@ -108,11 +115,56 @@ const ModificarPrecio: React.FC<ModificarPrecioProps> = ({
     setSuccessMessage("");
     setPreciosExistentes([]);
     setIsNuevoPrecio(false);
+    setShowDeleteModal(false);
+    setPrecioToDelete(null);
     onClose();
   };
 
   const handleChange = (field: keyof Precio, value: any) => {
     setFormData({ ...formData, [field]: value });
+
+    // Si cambia el costo o % ganancia, recalcular ganancia
+    if (field === "costo" || field === "porcentaje_ganancia") {
+      const costo = field === "costo" ? value || 0 : formData.costo || 0;
+      const porcentaje =
+        field === "porcentaje_ganancia"
+          ? value || 0
+          : formData.porcentaje_ganancia || 0;
+
+      if (costo > 0 && porcentaje > 0) {
+        const gananciaCalculada = (costo * porcentaje) / 100;
+        setGanancia(gananciaCalculada);
+        setGananciaInput(
+          `$${gananciaCalculada.toLocaleString("es-AR", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })}`
+        );
+      } else {
+        setGanancia(undefined);
+        setGananciaInput("");
+      }
+    }
+  };
+
+  const handleGananciaChange = (value: number | undefined) => {
+    setGanancia(value);
+
+    // Calcular % ganancia basado en ganancia y costo
+    if (
+      value !== undefined &&
+      value > 0 &&
+      formData.costo &&
+      formData.costo > 0
+    ) {
+      const porcentajeCalculado = (value / formData.costo) * 100;
+      setFormData({
+        ...formData,
+        porcentaje_ganancia: Number(porcentajeCalculado.toFixed(2)),
+      });
+    } else if (value === undefined || value === 0) {
+      setFormData({ ...formData, porcentaje_ganancia: undefined });
+    }
   };
 
   // Obtener precios existentes del modelo
@@ -133,6 +185,21 @@ const ModificarPrecio: React.FC<ModificarPrecioProps> = ({
         // Si existe un precio base, cargarlo para editar
         setFormData(precioBase);
         setIsNuevoPrecio(false);
+        // Calcular ganancia si hay costo y % ganancia
+        if (precioBase.costo && precioBase.porcentaje_ganancia !== undefined) {
+          const gananciaCalculada =
+            (precioBase.costo * precioBase.porcentaje_ganancia) / 100;
+          setGanancia(gananciaCalculada);
+          setGananciaInput(
+            `$${gananciaCalculada.toLocaleString("es-AR", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}`
+          );
+        } else {
+          setGanancia(undefined);
+          setGananciaInput("");
+        }
         console.log("Cargando precio base para editar:", precioBase);
       } else {
         // Si no existe precio base, crear uno nuevo
@@ -143,6 +210,8 @@ const ModificarPrecio: React.FC<ModificarPrecioProps> = ({
           es_base: true, // El primer precio será base
         });
         setIsNuevoPrecio(true);
+        setGanancia(undefined);
+        setGananciaInput("");
         console.log("Creando nuevo precio base");
       }
     } catch (error) {
@@ -256,6 +325,39 @@ const ModificarPrecio: React.FC<ModificarPrecioProps> = ({
     }
   };
 
+  const handleDeletePrecio = async () => {
+    if (!precioToDelete) return;
+
+    try {
+      await axios.put(
+        `${API_BASE_URL}/stock/precios/${precioToDelete._id}/baja`
+      );
+
+      // Recargar precios existentes después de eliminar
+      await obtenerPrecios();
+
+      // Si el precio eliminado era el que estaba en el formulario, resetear el formulario
+      if (formData._id === precioToDelete._id) {
+        setFormData(initialPrecio);
+        setIsNuevoPrecio(false);
+      }
+
+      setSuccessMessage("Precio eliminado exitosamente.");
+      setShowDeleteModal(false);
+      setPrecioToDelete(null);
+    } catch (error) {
+      console.error("Error al eliminar el precio:", error);
+      setErrorMessage("Ocurrió un error al eliminar el precio.");
+      setShowDeleteModal(false);
+      setPrecioToDelete(null);
+    }
+  };
+
+  const openDeleteModal = (precio: Precio) => {
+    setPrecioToDelete(precio);
+    setShowDeleteModal(true);
+  };
+
   return (
     <>
       {successMessage && (
@@ -339,46 +441,75 @@ const ModificarPrecio: React.FC<ModificarPrecioProps> = ({
               </div>
 
               {/* Lista de precios existentes */}
-              {preciosExistentes.length > 0 && (
+              {preciosExistentes.filter((p) => p.activo).length > 0 && (
                 <div className="mb-4 p-3 bg-base-100 rounded-lg">
                   <h4 className="font-semibold mb-2">Precios existentes:</h4>
                   <div className="space-y-2">
-                    {preciosExistentes.map((precio) => (
-                      <div
-                        key={precio._id}
-                        className="flex items-center justify-between p-2 bg-base-200 rounded"
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">
-                            {precio.nombre_precio}
-                          </span>
-                          {precio.es_base && (
-                            <span className="badge badge-primary badge-xs">
-                              Base
+                    {preciosExistentes
+                      .filter((precio) => precio.activo)
+                      .map((precio) => (
+                        <div
+                          key={precio._id}
+                          className="flex items-center justify-between p-2 bg-base-200 rounded"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">
+                              {precio.nombre_precio}
                             </span>
-                          )}
-                          {!precio.activo && (
-                            <span className="badge badge-error badge-xs">
-                              Inactivo
+                            {precio.es_base && (
+                              <span className="badge badge-primary badge-xs">
+                                Base
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm">
+                              ${precio.precio?.toLocaleString("es-AR") || "0"}
                             </span>
-                          )}
+                            <button
+                              className="btn btn-xs btn-outline"
+                              onClick={() => {
+                                setFormData(precio);
+                                setIsNuevoPrecio(false);
+                                // Calcular ganancia si hay costo y % ganancia
+                                if (
+                                  precio.costo &&
+                                  precio.porcentaje_ganancia !== undefined
+                                ) {
+                                  const gananciaCalculada =
+                                    (precio.costo *
+                                      precio.porcentaje_ganancia) /
+                                    100;
+                                  setGanancia(gananciaCalculada);
+                                  setGananciaInput(
+                                    `$${gananciaCalculada.toLocaleString(
+                                      "es-AR",
+                                      {
+                                        minimumFractionDigits: 2,
+                                        maximumFractionDigits: 2,
+                                      }
+                                    )}`
+                                  );
+                                } else {
+                                  setGanancia(undefined);
+                                  setGananciaInput("");
+                                }
+                              }}
+                            >
+                              Editar
+                            </button>
+                            {!precio.es_base && (
+                              <button
+                                className="btn btn-xs btn-error"
+                                onClick={() => openDeleteModal(precio)}
+                                title="Eliminar precio"
+                              >
+                                <FaTrash />
+                              </button>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm">
-                            ${precio.precio?.toLocaleString("es-AR") || "0"}
-                          </span>
-                          <button
-                            className="btn btn-xs btn-outline"
-                            onClick={() => {
-                              setFormData(precio);
-                              setIsNuevoPrecio(false);
-                            }}
-                          >
-                            Editar
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                      ))}
                   </div>
                   <button
                     className="btn btn-sm btn-primary mt-3"
@@ -390,6 +521,8 @@ const ModificarPrecio: React.FC<ModificarPrecioProps> = ({
                         es_base: false,
                       });
                       setIsNuevoPrecio(true);
+                      setGanancia(undefined);
+                      setGananciaInput("");
                     }}
                   >
                     + Agregar precio adicional
@@ -405,6 +538,72 @@ const ModificarPrecio: React.FC<ModificarPrecioProps> = ({
               <h3 className="text-lg md:text-xl font-semibold mb-4">
                 Precio Final
               </h3>
+
+              <div className="flex items-center gap-2 mb-2">
+                <label className="block">Ganancia:</label>
+                <div
+                  className="tooltip tooltip-right z-[9999]"
+                  data-tip="Monto de ganancia en pesos. Se calculará automáticamente el porcentaje de ganancia."
+                >
+                  <svg
+                    className="w-4 h-4 text-gray-500 cursor-help"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+              </div>
+              <div className="relative mb-4">
+                <FaDollarSign
+                  className="
+                    absolute 
+                    left-3 
+                    top-1/2 
+                    transform -translate-y-1/2 
+                    w-4 h-4 
+                    text-gray-500 
+                    pointer-events-none
+                  "
+                />
+                <input
+                  type="text"
+                  className="input input-bordered w-full pl-10"
+                  value={gananciaInput}
+                  onChange={(e) => {
+                    let value = e.target.value.replace(/[^\d]/g, "");
+                    setGananciaInput(value);
+                    const numValue = value === "" ? undefined : Number(value);
+                    handleGananciaChange(numValue);
+                  }}
+                  onBlur={() => {
+                    // Formatear cuando pierde el foco
+                    if (ganancia !== undefined && ganancia > 0) {
+                      setGananciaInput(
+                        `$${ganancia.toLocaleString("es-AR", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}`
+                      );
+                    } else {
+                      setGananciaInput("");
+                    }
+                  }}
+                  onFocus={() => {
+                    // Mostrar solo números cuando tiene foco
+                    if (ganancia !== undefined && ganancia > 0) {
+                      setGananciaInput(ganancia.toString());
+                    } else {
+                      setGananciaInput("");
+                    }
+                  }}
+                  placeholder="0"
+                />
+              </div>
 
               <div className="flex items-center gap-2 mb-2">
                 <label className="block">Porcentaje de ganancia:</label>
@@ -627,6 +826,17 @@ const ModificarPrecio: React.FC<ModificarPrecioProps> = ({
           onClose={() => setErrorMessage("")}
         />
       )}
+
+      {/* Modal de Confirmación para Eliminar */}
+      <ConfirmActionModal
+        isOpen={showDeleteModal}
+        message={`¿Estás seguro de que deseas eliminar el precio "${precioToDelete?.nombre_precio}"? Esta acción no se puede deshacer.`}
+        onConfirm={handleDeletePrecio}
+        onCancel={() => {
+          setShowDeleteModal(false);
+          setPrecioToDelete(null);
+        }}
+      />
     </>
   );
 };
