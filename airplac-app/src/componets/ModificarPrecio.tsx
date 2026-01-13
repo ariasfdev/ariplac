@@ -325,6 +325,76 @@ const ModificarPrecio: React.FC<ModificarPrecioProps> = ({
     }
   };
 
+  const handleSubmitAndContinue = async () => {
+    if (!validateForm()) return;
+
+    try {
+      // Asignar el precio calculado
+      formData.precio = precioCalculado.precioConTarjeta;
+
+      // Preparar el array de precios para enviar
+      const preciosParaEnviar: any[] = preciosExistentes.map((precio) => {
+        // Si es el precio que estamos editando, usar los datos del formulario
+        if (precio._id === formData._id) {
+          return {
+            _id: precio._id,
+            nombre_precio: formData.nombre_precio,
+            es_base: formData.es_base,
+            activo: formData.activo,
+            costo: formData.costo,
+            porcentaje_ganancia: formData.porcentaje_ganancia,
+            porcentaje_tarjeta: formData.porcentaje_tarjeta,
+            total_redondeo: formData.total_redondeo,
+          };
+        }
+        // Si no es el precio que estamos editando, mantener los datos originales
+        return {
+          _id: precio._id,
+          nombre_precio: precio.nombre_precio,
+          es_base: precio.es_base,
+          activo: precio.activo,
+          costo: precio.costo,
+          porcentaje_ganancia: precio.porcentaje_ganancia,
+          porcentaje_tarjeta: precio.porcentaje_tarjeta,
+          total_redondeo: precio.total_redondeo,
+        };
+      });
+
+      // Si es un nuevo precio, agregarlo al array
+      if (isNuevoPrecio) {
+        preciosParaEnviar.push({
+          nombre_precio: formData.nombre_precio,
+          es_base: formData.es_base,
+          activo: formData.activo,
+          costo: formData.costo,
+          porcentaje_ganancia: formData.porcentaje_ganancia,
+          porcentaje_tarjeta: formData.porcentaje_tarjeta,
+          total_redondeo: formData.total_redondeo,
+        });
+      }
+
+      // Enviar todos los precios al backend directamente
+      const payload = {
+        precios: preciosParaEnviar,
+      };
+
+      await axios.put(
+        `${API_BASE_URL}/stock/precios/${modelo.idModelo}`,
+        payload
+      );
+
+      // Recargar precios existentes
+      await obtenerPrecios();
+
+      // Mostrar mensaje de éxito sin cerrar el modal
+      setSuccessMessage("Precios guardados exitosamente.");
+      setIsNuevoPrecio(false);
+    } catch (error) {
+      console.error("Error al guardar el precio:", error);
+      setErrorMessage("Ocurrió un error al guardar el precio.");
+    }
+  };
+
   const handleDeletePrecio = async () => {
     if (!precioToDelete) return;
 
@@ -360,12 +430,6 @@ const ModificarPrecio: React.FC<ModificarPrecioProps> = ({
 
   return (
     <>
-      {successMessage && (
-        <SuccessModal
-          message={successMessage}
-          onClose={() => setSuccessMessage("")}
-        />
-      )}
       <Modal isOpen={isOpen} onClose={handleClose}>
         <div className="bg-base-200 p-4 rounded-lg">
           <h2 className="text-xl md:text-2xl font-bold mb-4">
@@ -810,10 +874,16 @@ const ModificarPrecio: React.FC<ModificarPrecioProps> = ({
               Cancelar
             </button>
             <button
+              className="btn btn-outline btn-primary w-full md:w-auto"
+              onClick={handleSubmitAndContinue}
+            >
+              Guardar y continuar
+            </button>
+            <button
               className="btn btn-primary w-full md:w-auto"
               onClick={handleSubmit}
             >
-              Guardar
+              Guardar y cerrar
             </button>
           </div>
         </div>
@@ -837,6 +907,14 @@ const ModificarPrecio: React.FC<ModificarPrecioProps> = ({
           setPrecioToDelete(null);
         }}
       />
+
+      {/* Modal de Éxito - Al final para que se muestre encima */}
+      {successMessage && (
+        <SuccessModal
+          message={successMessage}
+          onClose={() => setSuccessMessage("")}
+        />
+      )}
     </>
   );
 };

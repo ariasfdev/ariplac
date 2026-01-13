@@ -57,12 +57,26 @@ const Stock: React.FC = () => {
     direction: "asc" | "desc";
   }>({ key: null, direction: "asc" });
 
-  const fetchStocks = async () => {
+  const fetchStocks = async (preserveFilter: boolean = false) => {
     try {
       const response = await axios.get(`${API_BASE_URL}/stock/`);
       setStocks(response.data);
       console.log(response.data);
-      setFilteredStocks(response.data);
+      
+      // Si hay un filtro activo y se solicita preservarlo, re-aplicar el filtro
+      if (preserveFilter && searchTerm) {
+        const searchTermLower = searchTerm.toLowerCase();
+        const stockFiltrado = response.data.filter((stock: Stock) =>
+          Object.values(stock).some(
+            (val) =>
+              typeof val === "string" && val.toLowerCase().includes(searchTermLower)
+          )
+        );
+        setFilteredStocks(stockFiltrado);
+      } else {
+        setFilteredStocks(response.data);
+      }
+      
       setLoading(false);
     } catch (err) {
       setError("Error al cargar los stocks.");
@@ -135,7 +149,7 @@ const Stock: React.FC = () => {
 
       setIsModalOpen(false);
       setSelectedStock(null);
-      fetchStocks();
+      await fetchStocks(true);
       setSuccessMessage("Stock creado/actualizado exitosamente.");
     } catch (err: any) {
       console.error("Error al guardar el stock:", err);
@@ -170,7 +184,7 @@ const Stock: React.FC = () => {
         console.log("Respuesta del servidor:", response.data);
         
         setIsAgregarStockOpen(false);
-        fetchStocks();
+        await fetchStocks(true);
         
         // Mensaje personalizado según el tipo de operación
         const operacionTexto = 
@@ -196,7 +210,7 @@ const Stock: React.FC = () => {
         payload
       );
       setIsModificarPrecioOpen(false);
-      fetchStocks();
+      await fetchStocks(true);
       setSuccessMessage("Precios guardados exitosamente.");
     } catch (err: any) {
       console.error("Error al guardar los precios:", err);
