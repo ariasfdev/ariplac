@@ -22,6 +22,8 @@ const Home: React.FC = () => {
         return "Gestión de Modelos";
       case "/home/trazabilidad":
         return "Gestión de Trazabilidad";
+      case "/home/precios":
+        return "Gestión de Precios";
       default:
         return "Inicio";
     }

@@ -13,6 +13,7 @@ import Stock from "./pages/Stock";
 import Admin from "./pages/Admin";
 import Modelos from "./pages/Modelos";
 import Trazabilidad from "./pages/trazabilidad";
+import Precios from "./pages/Precios";
 
 const App: React.FC = () => {
   return (
@@ -30,6 +31,7 @@ const App: React.FC = () => {
             <Route path="admin" element={<Admin />} />
             <Route path="admin/pedidos" element={<Pedidos />} />
             <Route path="trazabilidad" element={<Trazabilidad />} />
+            <Route path="precios" element={<Precios />} />
           </Route>
         </Routes>
       </Router>

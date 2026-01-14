@@ -430,7 +430,7 @@ const ModificarPrecio: React.FC<ModificarPrecioProps> = ({
 
   return (
     <>
-      <Modal isOpen={isOpen} onClose={handleClose}>
+      <Modal isOpen={isOpen} onClose={() => handleSubmit()}>
         <div className="bg-base-200 p-4 rounded-lg">
           <h2 className="text-xl md:text-2xl font-bold mb-4">
             {isNuevoPrecio ? "Nuevo Precio Base" : "Editar Precio Base"} -{" "}
@@ -880,10 +880,10 @@ const ModificarPrecio: React.FC<ModificarPrecioProps> = ({
               Guardar y continuar
             </button>
             <button
-              className="btn btn-primary w-full md:w-auto"
+              className="btn btn-success w-full md:w-auto"
               onClick={handleSubmit}
             >
-              Guardar y cerrar
+              Guardar
             </button>
           </div>
         </div>

@@ -38,6 +38,7 @@ const NuevoModelo: React.FC<NuevoModeloProps> = ({
   };
 
   const [formData, setFormData] = useState<Modelo>(initialModelo);
+  const [placasInput, setPlacasInput] = useState<string>("");
   const [activeSection, setActiveSection] = useState<number>(0);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
@@ -45,8 +46,14 @@ const NuevoModelo: React.FC<NuevoModeloProps> = ({
   useEffect(() => {
     if (modelo) {
       setFormData(modelo);
+      setPlacasInput(
+        modelo.placas_por_metro !== undefined && modelo.placas_por_metro !== null
+          ? String(modelo.placas_por_metro).replace('.', '.')
+          : ''
+      );
     } else {
       setFormData(initialModelo);
+      setPlacasInput('');
     }
   }, [modelo]);
 
@@ -238,13 +245,46 @@ const NuevoModelo: React.FC<NuevoModeloProps> = ({
                 <input
                   type="text"
                   className="input input-bordered w-full pl-10"
-                  value={formData.placas_por_metro || ""}
+                  value={placasInput}
                   onChange={(e) => {
-                    const value = e.target.value.replace(/[^\d]/g, "");
-                    handleChange(
-                      "placas_por_metro",
-                      value === "" ? undefined : Number(value)
+                    // Permitir dígitos, punto o coma; mantener coma visible mientras escribe
+                    let raw = e.target.value;
+                    // Reemplazar múltiples caracteres no permitidos
+                    raw = raw.replace(/[^0-9.,]/g, '');
+                    // Normalizar múltiples separadores: conservar solo el primero
+                    const firstSepIndex = Math.min(
+                      ...['.', ',']
+                        .map((s) => raw.indexOf(s))
+                        .filter((i) => i >= 0)
+                        .concat([Infinity])
                     );
+                    if (firstSepIndex !== Infinity) {
+                      const before = raw.slice(0, firstSepIndex);
+                      const after = raw
+                        .slice(firstSepIndex)
+                        .replace(/[.,]/g, '')
+                        .slice(0, 1); // una cifra decimal
+                      raw = before + raw[firstSepIndex] + after;
+                    } else {
+                      // sólo enteros
+                      raw = raw.replace(/[.,]/g, '');
+                    }
+                    setPlacasInput(raw);
+                  }}
+                  onBlur={() => {
+                    if (placasInput === '') {
+                      setFormData({ ...formData, placas_por_metro: undefined as any });
+                      return;
+                    }
+                    const normalized = placasInput.replace(',', '.');
+                    const parsed = parseFloat(normalized);
+                    if (isNaN(parsed)) {
+                      setErrorMessage('Las Placas por metro deben ser un número válido.');
+                      return;
+                    }
+                    const rounded = Math.round(parsed * 10) / 10;
+                    setFormData({ ...formData, placas_por_metro: rounded });
+                    setPlacasInput(String(rounded));
                   }}
                   placeholder="1"
                 />
