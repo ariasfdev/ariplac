@@ -12,6 +12,7 @@ interface ModificarPrecioProps {
   onClose: () => void;
   precio: Precio | null;
   onSave: (precio: any) => Promise<void>;
+  onSaveSilent: (precio: any) => Promise<void>;
   modelo: any; // Modelo seleccionado
 }
 
@@ -34,6 +35,7 @@ const ModificarPrecio: React.FC<ModificarPrecioProps> = ({
   onClose,
   precio,
   onSave,
+  onSaveSilent,
   modelo,
 }) => {
   const initialPrecio: Precio = {
@@ -108,7 +110,77 @@ const ModificarPrecio: React.FC<ModificarPrecioProps> = ({
     formData.porcentaje_tarjeta,
   ]);
 
-  const handleClose = () => {
+  const handleClose = async () => {
+    // Si hay cambios no guardados, guardarlos al cerrar
+    if (formData.costo || formData.nombre_precio) {
+      try {
+        if (!validateForm()) {
+          // Si la validación falla, solo cerrar sin guardar
+          setFormData(initialPrecio);
+          setActiveSection(0);
+          setErrorMessage("");
+          setSuccessMessage("");
+          setPreciosExistentes([]);
+          setIsNuevoPrecio(false);
+          setShowDeleteModal(false);
+          setPrecioToDelete(null);
+          onClose();
+          return;
+        }
+
+        // Asignar el precio calculado
+        formData.precio = precioCalculado.precioConTarjeta;
+
+        // Preparar el array de precios para enviar
+        const preciosParaEnviar: any[] = preciosExistentes.map((precio) => {
+          if (precio._id === formData._id) {
+            return {
+              _id: precio._id,
+              nombre_precio: formData.nombre_precio,
+              es_base: formData.es_base,
+              activo: formData.activo,
+              costo: formData.costo,
+              porcentaje_ganancia: formData.porcentaje_ganancia,
+              porcentaje_tarjeta: formData.porcentaje_tarjeta,
+              total_redondeo: formData.total_redondeo,
+            };
+          }
+          return {
+            _id: precio._id,
+            nombre_precio: precio.nombre_precio,
+            es_base: precio.es_base,
+            activo: precio.activo,
+            costo: precio.costo,
+            porcentaje_ganancia: precio.porcentaje_ganancia,
+            porcentaje_tarjeta: precio.porcentaje_tarjeta,
+            total_redondeo: precio.total_redondeo,
+          };
+        });
+
+        if (isNuevoPrecio) {
+          preciosParaEnviar.push({
+            nombre_precio: formData.nombre_precio,
+            es_base: formData.es_base,
+            activo: formData.activo,
+            costo: formData.costo,
+            porcentaje_ganancia: formData.porcentaje_ganancia,
+            porcentaje_tarjeta: formData.porcentaje_tarjeta,
+            total_redondeo: formData.total_redondeo,
+          });
+        }
+
+        const payload = {
+          precios: preciosParaEnviar,
+        };
+
+        // Llamar a onSaveSilent para refrescar sin mostrar mensaje
+        await onSaveSilent(payload);
+      } catch (error) {
+        console.error("Error al guardar el precio:", error);
+      }
+    }
+
+    // Limpiar estado y cerrar sin mostrar mensaje
     setFormData(initialPrecio);
     setActiveSection(0);
     setErrorMessage("");
@@ -430,7 +502,7 @@ const ModificarPrecio: React.FC<ModificarPrecioProps> = ({
 
   return (
     <>
-      <Modal isOpen={isOpen} onClose={() => handleSubmit()}>
+      <Modal isOpen={isOpen} onClose={handleClose}>
         <div className="bg-base-200 p-4 rounded-lg">
           <h2 className="text-xl md:text-2xl font-bold mb-4">
             {isNuevoPrecio ? "Nuevo Precio Base" : "Editar Precio Base"} -{" "}

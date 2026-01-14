@@ -220,6 +220,23 @@ const Stock: React.FC = () => {
     }
   };
 
+  const handleSavePrecioSilent = async (payload: any) => {
+    try {
+      // El payload ahora contiene { precios: [...] }
+      await axios.put(
+        `${API_BASE_URL}/stock/precios/${selectedStock?.idModelo}`,
+        payload
+      );
+      await fetchStocks(true);
+      // NO se establece successMessage aquí
+    } catch (err: any) {
+      console.error("Error al guardar los precios:", err);
+      if (err.response) {
+        console.error("Detalles del error:", err.response.data);
+      }
+    }
+  };
+
   // Función para ordenar los datos
   const sortData = (data: Stock[]) => {
     if (!sortConfig.key) return data;
@@ -1212,6 +1229,7 @@ const Stock: React.FC = () => {
         onClose={() => setIsModificarPrecioOpen(false)}
         precio={null}
         onSave={handleSavePrecio}
+        onSaveSilent={handleSavePrecioSilent}
         modelo={selectedStock}
       />
     </div>

@@ -519,15 +519,19 @@ const PreciosMasivos: React.FC<PreciosMasivosProps> = ({
                     </div>
                     <div className="collapse-content max-h-60 overflow-y-auto">
                       {previewData.actualizados.map((item: any, idx: number) => (
-                        <div key={idx} className="p-2 bg-base-100 rounded mb-2">
-                          <p className="font-bold">{item.modelo}</p>
-                          <div className="text-sm">
-                            <p className="text-base-content/60">
-                              Antes: ${item.precio_anterior.precio} / ${item.precio_anterior.precioTarjeta}
-                            </p>
-                            <p className="text-success">
-                              Después: ${item.precio_nuevo.precio} / ${item.precio_nuevo.precioTarjeta}
-                            </p>
+                        <div key={idx} className="p-3 bg-base-100 rounded-lg mb-2">
+                          <p className="font-bold text-base">{item.modelo}</p>
+                          <div className="grid grid-cols-2 gap-3 mt-2 text-sm">
+                            <div className="text-base-content/60">
+                              <p className="font-semibold mb-1">Antes:</p>
+                              <p>Precio base: ${item.precio_anterior.precio}</p>
+                              <p>Con tarjeta: ${item.precio_anterior.precioTarjeta}</p>
+                            </div>
+                            <div className="text-success">
+                              <p className="font-semibold mb-1">Después:</p>
+                              <p>Precio base: ${item.precio_nuevo.precio}</p>
+                              <p>Con tarjeta: ${item.precio_nuevo.precioTarjeta}</p>
+                            </div>
                           </div>
                         </div>
                       ))}
@@ -673,18 +677,18 @@ const PreciosMasivos: React.FC<PreciosMasivosProps> = ({
                       {resultData.detalles.actualizados.map((item: any, idx: number) => (
                         <div key={idx} className="bg-base-100 p-3 rounded-lg shadow">
                           <p className="font-bold text-lg">{item.modelo}</p>
-                          <div className="text-sm mt-2 grid grid-cols-2 gap-2">
+                          <div className="text-sm mt-2 grid grid-cols-2 gap-4">
                             <div className="text-base-content/60">
-                              <p>Antes:</p>
+                              <p className="font-semibold mb-2">Antes:</p>
                               <p>Costo: ${item.precio_anterior.costo}</p>
-                              <p>Precio: ${item.precio_anterior.precio}</p>
-                              <p>Tarjeta: ${item.precio_anterior.precioTarjeta}</p>
+                              <p>Precio base: ${item.precio_anterior.precio}</p>
+                              <p>Con tarjeta: ${item.precio_anterior.precioTarjeta}</p>
                             </div>
-                            <div className="text-success font-bold">
-                              <p>Después:</p>
-                              <p>Costo: ${item.precio_nuevo.costo}</p>
-                              <p>Precio: ${item.precio_nuevo.precio}</p>
-                              <p>Tarjeta: ${item.precio_nuevo.precioTarjeta}</p>
+                            <div className="text-success">
+                              <p className="font-semibold mb-2">Después:</p>
+                              <p className="font-medium">Costo: ${item.precio_nuevo.costo}</p>
+                              <p className="font-medium">Precio base: ${item.precio_nuevo.precio}</p>
+                              <p className="font-medium">Con tarjeta: ${item.precio_nuevo.precioTarjeta}</p>
                             </div>
                           </div>
                         </div>
