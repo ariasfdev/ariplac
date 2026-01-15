@@ -47,7 +47,7 @@ const ModificarPrecio: React.FC<ModificarPrecioProps> = ({
     costo: undefined,
     porcentaje_ganancia: undefined,
     porcentaje_tarjeta: undefined,
-    total_redondeo: undefined,
+    total_redondeo: 0,
     fecha: new Date(),
     precio: undefined,
   };
@@ -110,77 +110,8 @@ const ModificarPrecio: React.FC<ModificarPrecioProps> = ({
     formData.porcentaje_tarjeta,
   ]);
 
-  const handleClose = async () => {
-    // Si hay cambios no guardados, guardarlos al cerrar
-    if (formData.costo || formData.nombre_precio) {
-      try {
-        if (!validateForm()) {
-          // Si la validación falla, solo cerrar sin guardar
-          setFormData(initialPrecio);
-          setActiveSection(0);
-          setErrorMessage("");
-          setSuccessMessage("");
-          setPreciosExistentes([]);
-          setIsNuevoPrecio(false);
-          setShowDeleteModal(false);
-          setPrecioToDelete(null);
-          onClose();
-          return;
-        }
-
-        // Asignar el precio calculado
-        formData.precio = precioCalculado.precioConTarjeta;
-
-        // Preparar el array de precios para enviar
-        const preciosParaEnviar: any[] = preciosExistentes.map((precio) => {
-          if (precio._id === formData._id) {
-            return {
-              _id: precio._id,
-              nombre_precio: formData.nombre_precio,
-              es_base: formData.es_base,
-              activo: formData.activo,
-              costo: formData.costo,
-              porcentaje_ganancia: formData.porcentaje_ganancia,
-              porcentaje_tarjeta: formData.porcentaje_tarjeta,
-              total_redondeo: formData.total_redondeo,
-            };
-          }
-          return {
-            _id: precio._id,
-            nombre_precio: precio.nombre_precio,
-            es_base: precio.es_base,
-            activo: precio.activo,
-            costo: precio.costo,
-            porcentaje_ganancia: precio.porcentaje_ganancia,
-            porcentaje_tarjeta: precio.porcentaje_tarjeta,
-            total_redondeo: precio.total_redondeo,
-          };
-        });
-
-        if (isNuevoPrecio) {
-          preciosParaEnviar.push({
-            nombre_precio: formData.nombre_precio,
-            es_base: formData.es_base,
-            activo: formData.activo,
-            costo: formData.costo,
-            porcentaje_ganancia: formData.porcentaje_ganancia,
-            porcentaje_tarjeta: formData.porcentaje_tarjeta,
-            total_redondeo: formData.total_redondeo,
-          });
-        }
-
-        const payload = {
-          precios: preciosParaEnviar,
-        };
-
-        // Llamar a onSaveSilent para refrescar sin mostrar mensaje
-        await onSaveSilent(payload);
-      } catch (error) {
-        console.error("Error al guardar el precio:", error);
-      }
-    }
-
-    // Limpiar estado y cerrar sin mostrar mensaje
+  const handleClose = () => {
+    // Limpiar estado y cerrar sin guardar
     setFormData(initialPrecio);
     setActiveSection(0);
     setErrorMessage("");
@@ -189,6 +120,8 @@ const ModificarPrecio: React.FC<ModificarPrecioProps> = ({
     setIsNuevoPrecio(false);
     setShowDeleteModal(false);
     setPrecioToDelete(null);
+    setGanancia(undefined);
+    setGananciaInput("");
     onClose();
   };
 
@@ -255,7 +188,10 @@ const ModificarPrecio: React.FC<ModificarPrecioProps> = ({
 
       if (precioBase) {
         // Si existe un precio base, cargarlo para editar
-        setFormData(precioBase);
+        setFormData({
+          ...precioBase,
+          total_redondeo: precioBase.total_redondeo ?? 0,
+        });
         setIsNuevoPrecio(false);
         // Calcular ganancia si hay costo y % ganancia
         if (precioBase.costo && precioBase.porcentaje_ganancia !== undefined) {
@@ -319,7 +255,8 @@ const ModificarPrecio: React.FC<ModificarPrecioProps> = ({
       return false;
     }
 
-    if (formData.total_redondeo === undefined || formData.total_redondeo < 0) {
+    // Validar que total_redondeo sea >= 0 solo si está definido (no es obligatorio)
+    if (formData.total_redondeo !== undefined && formData.total_redondeo < 0) {
       setErrorMessage("El 'Total redondeo' debe ser mayor o igual a 0.");
       return false;
     }
@@ -346,7 +283,7 @@ const ModificarPrecio: React.FC<ModificarPrecioProps> = ({
             costo: formData.costo,
             porcentaje_ganancia: formData.porcentaje_ganancia,
             porcentaje_tarjeta: formData.porcentaje_tarjeta,
-            total_redondeo: formData.total_redondeo,
+            total_redondeo: formData.total_redondeo ?? 0,
           };
         }
         // Si no es el precio que estamos editando, mantener los datos originales
@@ -358,7 +295,7 @@ const ModificarPrecio: React.FC<ModificarPrecioProps> = ({
           costo: precio.costo,
           porcentaje_ganancia: precio.porcentaje_ganancia,
           porcentaje_tarjeta: precio.porcentaje_tarjeta,
-          total_redondeo: precio.total_redondeo,
+          total_redondeo: precio.total_redondeo ?? 0,
         };
       });
 
@@ -371,7 +308,7 @@ const ModificarPrecio: React.FC<ModificarPrecioProps> = ({
           costo: formData.costo,
           porcentaje_ganancia: formData.porcentaje_ganancia,
           porcentaje_tarjeta: formData.porcentaje_tarjeta,
-          total_redondeo: formData.total_redondeo,
+          total_redondeo: formData.total_redondeo ?? 0,
         });
       }
 
@@ -416,7 +353,7 @@ const ModificarPrecio: React.FC<ModificarPrecioProps> = ({
             costo: formData.costo,
             porcentaje_ganancia: formData.porcentaje_ganancia,
             porcentaje_tarjeta: formData.porcentaje_tarjeta,
-            total_redondeo: formData.total_redondeo,
+            total_redondeo: formData.total_redondeo ?? 0,
           };
         }
         // Si no es el precio que estamos editando, mantener los datos originales
@@ -428,7 +365,7 @@ const ModificarPrecio: React.FC<ModificarPrecioProps> = ({
           costo: precio.costo,
           porcentaje_ganancia: precio.porcentaje_ganancia,
           porcentaje_tarjeta: precio.porcentaje_tarjeta,
-          total_redondeo: precio.total_redondeo,
+          total_redondeo: precio.total_redondeo ?? 0,
         };
       });
 
@@ -441,7 +378,7 @@ const ModificarPrecio: React.FC<ModificarPrecioProps> = ({
           costo: formData.costo,
           porcentaje_ganancia: formData.porcentaje_ganancia,
           porcentaje_tarjeta: formData.porcentaje_tarjeta,
-          total_redondeo: formData.total_redondeo,
+          total_redondeo: formData.total_redondeo ?? 0,
         });
       }
 
@@ -605,7 +542,10 @@ const ModificarPrecio: React.FC<ModificarPrecioProps> = ({
                             <button
                               className="btn btn-xs btn-outline"
                               onClick={() => {
-                                setFormData(precio);
+                                setFormData({
+                                  ...precio,
+                                  total_redondeo: precio.total_redondeo ?? 0,
+                                });
                                 setIsNuevoPrecio(false);
                                 // Calcular ganancia si hay costo y % ganancia
                                 if (
@@ -875,16 +815,14 @@ const ModificarPrecio: React.FC<ModificarPrecioProps> = ({
                 <input
                   type="text"
                   className="input input-bordered w-full pl-10"
-                  value={
-                    formData.total_redondeo !== undefined
-                      ? `$${formData.total_redondeo.toLocaleString("es-AR")}`
-                      : ""
-                  }
+                  value={`$${(formData.total_redondeo ?? 0).toLocaleString(
+                    "es-AR"
+                  )}`}
                   onChange={(e) => {
                     const value = e.target.value.replace(/[^\d]/g, "");
                     handleChange(
                       "total_redondeo",
-                      value === "" ? undefined : Number(value)
+                      value === "" ? 0 : Number(value)
                     );
                   }}
                   placeholder="0"

@@ -43,24 +43,24 @@ const PreciosMasivos: React.FC<PreciosMasivosProps> = ({
   const [modelos, setModelos] = useState<Modelo[]>([]);
   const [excluidos, setExcluidos] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
-  
+
   // Campos para actualización
   const [costo, setCosto] = useState<string>("");
   const [porcentajeGanancia, setPorcentajeGanancia] = useState<string>("");
   const [ganancia, setGanancia] = useState<number | undefined>(undefined);
   const [gananciaInput, setGananciaInput] = useState<string>("");
   const [porcentajeTarjeta, setPorcentajeTarjeta] = useState<string>("");
-  const [totalRedondeo, setTotalRedondeo] = useState<string>("");
+  const [totalRedondeo, setTotalRedondeo] = useState<string>("0");
   const [editingGanancia, setEditingGanancia] = useState<boolean>(false);
   const [editingPorcentaje, setEditingPorcentaje] = useState<boolean>(false);
-  
+
   // Campos para adicional
   const [nombrePrecio, setNombrePrecio] = useState<string>("");
-  
+
   // Preview y resultados
   const [previewData, setPreviewData] = useState<PreviewData | null>(null);
   const [resultData, setResultData] = useState<any>(null);
-  
+
   // Modales
   const [error, setError] = useState<string>("");
   const [success, setSuccess] = useState<string>("");
@@ -80,7 +80,7 @@ const PreciosMasivos: React.FC<PreciosMasivosProps> = ({
     setGanancia(undefined);
     setGananciaInput("");
     setPorcentajeTarjeta("");
-    setTotalRedondeo("");
+    setTotalRedondeo("0");
     setNombrePrecio("");
     setPreviewData(null);
     setResultData(null);
@@ -94,18 +94,25 @@ const PreciosMasivos: React.FC<PreciosMasivosProps> = ({
 
   useEffect(() => {
     const costoNum = costo ? parseFloat(costo) : 0;
-    const porcentajeFrac = porcentajeGanancia ? parseFloat(porcentajeGanancia) : 0;
+    const porcentajeFrac = porcentajeGanancia
+      ? parseFloat(porcentajeGanancia)
+      : 0;
 
-    // porcentajeGanancia is stored as a percentage number (e.g. 50 = 50%) to match ModificarPrecio
-    if (!editingPorcentaje && !editingGanancia) {
+    // Solo recalcular ganancia si NO estamos editando ganancia directamente
+    // Esto evita que se pierda precisión cuando el usuario ingresa un valor exacto
+    if (!editingGanancia) {
       if (costoNum > 0 && porcentajeFrac > 0) {
         const gananciaCalculada = costoNum * (porcentajeFrac / 100);
-        const g = Number(gananciaCalculada.toFixed(2));
-        setGanancia(g);
+        // Mantener el valor exacto sin redondear prematuramente
+        setGanancia(gananciaCalculada);
         setGananciaInput(
-          `$${g.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+          `$${gananciaCalculada.toLocaleString("es-AR", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })}`
         );
-      } else {
+      } else if (!editingPorcentaje) {
+        // Solo limpiar si no estamos editando porcentaje
         setGanancia(undefined);
         setGananciaInput("");
       }
@@ -113,14 +120,20 @@ const PreciosMasivos: React.FC<PreciosMasivosProps> = ({
   }, [costo, porcentajeGanancia, editingGanancia, editingPorcentaje]);
 
   const handleGananciaChange = (value: number | undefined) => {
-    setGanancia(value !== undefined ? Number(value.toFixed(2)) : undefined);
+    // Mantener el valor exacto ingresado, sin redondear
+    setGanancia(value);
 
     if (value !== undefined && value > 0 && costo && Number(costo) > 0) {
-      // Copy ModificarPrecio behavior: porcentaje = (ganancia / costo) * 100
+      // Calcular % ganancia basado en ganancia y costo (igual que ModificarPrecio)
+      // Usar 10 decimales para mantener máxima precisión
       const porcentajeCalculado = (value / Number(costo)) * 100;
-      setPorcentajeGanancia(Number(porcentajeCalculado.toFixed(2)).toString());
+      // Guardar con máxima precisión (10 decimales) para evitar pérdida al recalcular
+      setPorcentajeGanancia(porcentajeCalculado.toFixed(10));
+      // Marcar que estamos editando ganancia para evitar que el useEffect recalcule
+      setEditingGanancia(true);
     } else if (value === undefined || value === 0) {
       setPorcentajeGanancia("");
+      setEditingGanancia(false);
     }
   };
 
@@ -138,7 +151,12 @@ const PreciosMasivos: React.FC<PreciosMasivosProps> = ({
 
   const validateStep1 = (): boolean => {
     if (tipo === "actualizar") {
-      if (!costo && !porcentajeGanancia && !porcentajeTarjeta && !totalRedondeo) {
+      if (
+        !costo &&
+        !porcentajeGanancia &&
+        !porcentajeTarjeta &&
+        !totalRedondeo
+      ) {
         setError("Debe ingresar al menos un campo para actualizar");
         return false;
       }
@@ -151,7 +169,9 @@ const PreciosMasivos: React.FC<PreciosMasivosProps> = ({
         (!porcentajeGanancia && ganancia === undefined) ||
         !porcentajeTarjeta
       ) {
-        setError("Todos los campos son requeridos para crear un precio adicional");
+        setError(
+          "Todos los campos son requeridos para crear un precio adicional"
+        );
         return false;
       }
     }
@@ -175,9 +195,13 @@ const PreciosMasivos: React.FC<PreciosMasivosProps> = ({
               excluidos,
               actualizacion: {
                 ...(costo && { costo: parseFloat(costo) }),
-                ...(porcentajeGanancia && { porcentaje_ganancia: parseFloat(porcentajeGanancia) }),
-                ...(porcentajeTarjeta && { porcentaje_tarjeta: parseFloat(porcentajeTarjeta) }),
-                ...(totalRedondeo && { total_redondeo: parseFloat(totalRedondeo) }),
+                ...(porcentajeGanancia && {
+                  porcentaje_ganancia: parseFloat(porcentajeGanancia),
+                }),
+                ...(porcentajeTarjeta && {
+                  porcentaje_tarjeta: parseFloat(porcentajeTarjeta),
+                }),
+                total_redondeo: totalRedondeo ? parseFloat(totalRedondeo) : 0,
               },
             }
           : {
@@ -219,9 +243,13 @@ const PreciosMasivos: React.FC<PreciosMasivosProps> = ({
               excluidos,
               actualizacion: {
                 ...(costo && { costo: parseFloat(costo) }),
-                ...(porcentajeGanancia && { porcentaje_ganancia: parseFloat(porcentajeGanancia) }),
-                ...(porcentajeTarjeta && { porcentaje_tarjeta: parseFloat(porcentajeTarjeta) }),
-                ...(totalRedondeo && { total_redondeo: parseFloat(totalRedondeo) }),
+                ...(porcentajeGanancia && {
+                  porcentaje_ganancia: parseFloat(porcentajeGanancia),
+                }),
+                ...(porcentajeTarjeta && {
+                  porcentaje_tarjeta: parseFloat(porcentajeTarjeta),
+                }),
+                total_redondeo: totalRedondeo ? parseFloat(totalRedondeo) : 0,
               },
             }
           : {
@@ -242,7 +270,9 @@ const PreciosMasivos: React.FC<PreciosMasivosProps> = ({
       setResultData(response.data);
       setStep(3);
     } catch (err: any) {
-      setError(err.response?.data?.message || "Error al realizar la actualización");
+      setError(
+        err.response?.data?.message || "Error al realizar la actualización"
+      );
       setStep(2); // Volver al paso 2 si hay error
     } finally {
       setLoading(false);
@@ -268,7 +298,9 @@ const PreciosMasivos: React.FC<PreciosMasivosProps> = ({
         <div className="p-6 max-h-[85vh] overflow-y-auto">
           {/* Header */}
           <h2 className="text-2xl font-bold mb-4 text-primary">
-            {tipo === "actualizar" ? "Actualizar Precios Masivos" : "Crear Precio Adicional Masivo"}
+            {tipo === "actualizar"
+              ? "Actualizar Precios Masivos"
+              : "Crear Precio Adicional Masivo"}
           </h2>
           <p className="text-base-content/70 mb-6">
             Producto: <span className="font-bold">{producto}</span>
@@ -276,22 +308,50 @@ const PreciosMasivos: React.FC<PreciosMasivosProps> = ({
 
           {/* Steps indicator */}
           <div className="flex items-center justify-center mb-8">
-            <div className={`flex items-center ${step >= 1 ? 'text-primary' : 'text-base-content/30'}`}>
+            <div
+              className={`flex items-center ${
+                step >= 1 ? "text-primary" : "text-base-content/30"
+              }`}
+            >
               <div className="w-8 h-8 rounded-full bg-primary text-primary-content flex items-center justify-center font-bold">
                 1
               </div>
               <span className="ml-2 hidden sm:inline">Configuración</span>
             </div>
-            <div className={`w-16 h-1 mx-2 ${step >= 2 ? 'bg-primary' : 'bg-base-300'}`}></div>
-            <div className={`flex items-center ${step >= 2 ? 'text-primary' : 'text-base-content/30'}`}>
-              <div className={`w-8 h-8 rounded-full ${step >= 2 ? 'bg-primary text-primary-content' : 'bg-base-300'} flex items-center justify-center font-bold`}>
+            <div
+              className={`w-16 h-1 mx-2 ${
+                step >= 2 ? "bg-primary" : "bg-base-300"
+              }`}
+            ></div>
+            <div
+              className={`flex items-center ${
+                step >= 2 ? "text-primary" : "text-base-content/30"
+              }`}
+            >
+              <div
+                className={`w-8 h-8 rounded-full ${
+                  step >= 2 ? "bg-primary text-primary-content" : "bg-base-300"
+                } flex items-center justify-center font-bold`}
+              >
                 2
               </div>
               <span className="ml-2 hidden sm:inline">Vista Previa</span>
             </div>
-            <div className={`w-16 h-1 mx-2 ${step >= 3 ? 'bg-primary' : 'bg-base-300'}`}></div>
-            <div className={`flex items-center ${step >= 3 ? 'text-primary' : 'text-base-content/30'}`}>
-              <div className={`w-8 h-8 rounded-full ${step >= 3 ? 'bg-primary text-primary-content' : 'bg-base-300'} flex items-center justify-center font-bold`}>
+            <div
+              className={`w-16 h-1 mx-2 ${
+                step >= 3 ? "bg-primary" : "bg-base-300"
+              }`}
+            ></div>
+            <div
+              className={`flex items-center ${
+                step >= 3 ? "text-primary" : "text-base-content/30"
+              }`}
+            >
+              <div
+                className={`w-8 h-8 rounded-full ${
+                  step >= 3 ? "bg-primary text-primary-content" : "bg-base-300"
+                } flex items-center justify-center font-bold`}
+              >
                 3
               </div>
               <span className="ml-2 hidden sm:inline">Resultados</span>
@@ -304,7 +364,7 @@ const PreciosMasivos: React.FC<PreciosMasivosProps> = ({
               {/* Campos de precio */}
               <div className="bg-base-200 p-4 rounded-lg">
                 <h3 className="font-bold mb-4">Configuración de Precios</h3>
-                
+
                 {tipo === "adicional" && (
                   <div className="form-control mb-4">
                     <label className="label">
@@ -331,11 +391,15 @@ const PreciosMasivos: React.FC<PreciosMasivosProps> = ({
                       <input
                         type="text"
                         className="input input-bordered w-full"
-                        value={costo ? `$${Number(costo).toLocaleString("es-AR")}` : ""}
+                        value={
+                          costo
+                            ? `$${Number(costo).toLocaleString("es-AR")}`
+                            : ""
+                        }
                         onChange={(e) => {
-                            // Match ModificarPrecio: keep only digits (treat input as integer units)
-                            const raw = e.target.value.replace(/[^\d]/g, "");
-                            setCosto(raw === "" ? "" : String(Number(raw)));
+                          // Match ModificarPrecio: keep only digits (treat input as integer units)
+                          const raw = e.target.value.replace(/[^\d]/g, "");
+                          setCosto(raw === "" ? "" : String(Number(raw)));
                         }}
                         placeholder="0"
                       />
@@ -346,41 +410,50 @@ const PreciosMasivos: React.FC<PreciosMasivosProps> = ({
                     <label className="label">
                       <span className="label-text">Ganancia (ARS)</span>
                     </label>
-                    <input
-                      type="text"
-                      className="input input-bordered"
-                      value={gananciaInput}
-                      onChange={(e) => {
-                        let value = e.target.value;
-                        value = value.replace(/\./g, "");
-                        value = value.replace(/,/g, ".");
-                        value = value.replace(/[^\d.]/g, "");
-                        const parts = value.split('.');
-                        if (parts.length > 2) value = parts[0] + '.' + parts.slice(1).join('');
-                        setGananciaInput(value);
-                        const numValue = value === "" ? undefined : Number(value);
-                        handleGananciaChange(numValue);
-                      }}
-                      onBlur={() => {
-                        setEditingGanancia(false);
-                        if (ganancia !== undefined && ganancia > 0) {
-                          setGananciaInput(
-                            `$${ganancia.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                          );
-                        } else {
-                          setGananciaInput("");
-                        }
-                      }}
-                      onFocus={() => {
-                        setEditingGanancia(true);
-                        if (ganancia !== undefined && ganancia > 0) {
-                          setGananciaInput(ganancia.toString());
-                        } else {
-                          setGananciaInput("");
-                        }
-                      }}
-                      placeholder="0"
-                    />
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 pointer-events-none z-10">
+                        $
+                      </span>
+                      <input
+                        type="text"
+                        className="input input-bordered w-full pl-10"
+                        value={gananciaInput}
+                        onChange={(e) => {
+                          // Solo aceptar dígitos (enteros), igual que ModificarPrecio
+                          let value = e.target.value.replace(/[^\d]/g, "");
+                          setGananciaInput(value);
+                          const numValue =
+                            value === "" ? undefined : Number(value);
+                          handleGananciaChange(numValue);
+                        }}
+                        onBlur={() => {
+                          // NO poner editingGanancia en false para preservar el valor exacto
+                          // Solo actualizar el formato del input
+                          if (ganancia !== undefined && ganancia > 0) {
+                            setGananciaInput(
+                              `$${ganancia.toLocaleString("es-AR", {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              })}`
+                            );
+                            // Mantener editingGanancia en true para que el useEffect no recalcule
+                            // Esto preserva el valor exacto que el usuario ingresó
+                          } else {
+                            setGananciaInput("");
+                            setEditingGanancia(false);
+                          }
+                        }}
+                        onFocus={() => {
+                          setEditingGanancia(true);
+                          if (ganancia !== undefined && ganancia > 0) {
+                            setGananciaInput(ganancia.toString());
+                          } else {
+                            setGananciaInput("");
+                          }
+                        }}
+                        placeholder="0"
+                      />
+                    </div>
                   </div>
 
                   <div className="form-control">
@@ -391,20 +464,26 @@ const PreciosMasivos: React.FC<PreciosMasivosProps> = ({
                     </label>
                     <input
                       type="text"
-                      className="input input-bordered"
+                      className="input input-bordered w-full"
                       value={porcentajeGanancia}
                       onChange={(e) => {
                         // allow fractional input like 0.5
-                        const v = e.target.value.replace(/,/g, '.').replace(/[^\d.]/g, '');
+                        const v = e.target.value
+                          .replace(/,/g, ".")
+                          .replace(/[^\d.]/g, "");
                         setPorcentajeGanancia(v);
                       }}
                       onFocus={() => setEditingPorcentaje(true)}
                       onBlur={() => {
                         setEditingPorcentaje(false);
-                        // format fraction to trimmed decimals (e.g. 0.5000 -> 0.5)
+                        // Mantener más decimales internamente (10) para precisión
+                        // Solo formatear visualmente a 2 decimales si el usuario lo editó
                         if (porcentajeGanancia) {
                           const n = parseFloat(porcentajeGanancia);
-                          if (!isNaN(n)) setPorcentajeGanancia(formatFraction(n, 4));
+                          if (!isNaN(n)) {
+                            // Mantener 10 decimales internamente para máxima precisión
+                            setPorcentajeGanancia(n.toFixed(10));
+                          }
                         }
                       }}
                       placeholder="0"
@@ -435,8 +514,11 @@ const PreciosMasivos: React.FC<PreciosMasivosProps> = ({
                     <input
                       type="number"
                       className="input input-bordered"
-                      value={totalRedondeo}
-                      onChange={(e) => setTotalRedondeo(e.target.value)}
+                      value={totalRedondeo || "0"}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setTotalRedondeo(value === "" ? "0" : value);
+                      }}
                       placeholder="0"
                       min="0"
                       step="0.01"
@@ -448,11 +530,17 @@ const PreciosMasivos: React.FC<PreciosMasivosProps> = ({
               {/* Modelos a excluir */}
               <div className="bg-base-200 p-4 rounded-lg">
                 <h3 className="font-bold mb-4">
-                  Excluir Modelos <span className="text-sm font-normal text-base-content/60">({excluidos.length} seleccionados)</span>
+                  Excluir Modelos{" "}
+                  <span className="text-sm font-normal text-base-content/60">
+                    ({excluidos.length} seleccionados)
+                  </span>
                 </h3>
                 <div className="max-h-60 overflow-y-auto space-y-2">
                   {modelos.map((modelo) => (
-                    <label key={modelo._id} className="flex items-center gap-2 p-2 hover:bg-base-300 rounded cursor-pointer">
+                    <label
+                      key={modelo._id}
+                      className="flex items-center gap-2 p-2 hover:bg-base-300 rounded cursor-pointer"
+                    >
                       <input
                         type="checkbox"
                         className="checkbox checkbox-primary"
@@ -491,95 +579,142 @@ const PreciosMasivos: React.FC<PreciosMasivosProps> = ({
               {/* Resumen en cards más compacto */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="bg-base-200 p-4 rounded-lg text-center">
-                  <div className="text-sm text-base-content/60">Total Modelos</div>
-                  <div className="text-3xl font-bold text-primary">{previewData.total_modelos}</div>
+                  <div className="text-sm text-base-content/60">
+                    Total Modelos
+                  </div>
+                  <div className="text-3xl font-bold text-primary">
+                    {previewData.total_modelos}
+                  </div>
                 </div>
                 <div className="bg-success/10 p-4 rounded-lg text-center border border-success">
-                  <div className="text-sm text-base-content/60">Se Actualizarán</div>
-                  <div className="text-3xl font-bold text-success">{previewData.exitosos}</div>
+                  <div className="text-sm text-base-content/60">
+                    Se Actualizarán
+                  </div>
+                  <div className="text-3xl font-bold text-success">
+                    {previewData.exitosos}
+                  </div>
                 </div>
                 <div className="bg-warning/10 p-4 rounded-lg text-center border border-warning">
-                  <div className="text-sm text-base-content/60">Con Pedidos</div>
-                  <div className="text-3xl font-bold text-warning">{previewData.no_actualizados}</div>
+                  <div className="text-sm text-base-content/60">
+                    Con Pedidos
+                  </div>
+                  <div className="text-3xl font-bold text-warning">
+                    {previewData.no_actualizados}
+                  </div>
                 </div>
                 <div className="bg-error/10 p-4 rounded-lg text-center border border-error">
                   <div className="text-sm text-base-content/60">Excluidos</div>
-                  <div className="text-3xl font-bold text-error">{previewData.excluidos}</div>
+                  <div className="text-3xl font-bold text-error">
+                    {previewData.excluidos}
+                  </div>
                 </div>
               </div>
 
               {/* Detalles */}
               <div className="space-y-4">
                 {/* Modelos que se actualizarán/crearán */}
-                {tipo === "actualizar" && previewData.actualizados?.length > 0 && (
-                  <div className="collapse collapse-arrow bg-success/10 border border-success">
-                    <input type="checkbox" defaultChecked />
-                    <div className="collapse-title font-bold text-success">
-                      ✅ Modelos que se actualizarán ({previewData.actualizados.length})
-                    </div>
-                    <div className="collapse-content max-h-60 overflow-y-auto">
-                      {previewData.actualizados.map((item: any, idx: number) => (
-                        <div key={idx} className="p-3 bg-base-100 rounded-lg mb-2">
-                          <p className="font-bold text-base">{item.modelo}</p>
-                          <div className="grid grid-cols-2 gap-3 mt-2 text-sm">
-                            <div className="text-base-content/60">
-                              <p className="font-semibold mb-1">Antes:</p>
-                              <p>Precio base: ${item.precio_anterior.precio}</p>
-                              <p>Con tarjeta: ${item.precio_anterior.precioTarjeta}</p>
+                {tipo === "actualizar" &&
+                  previewData.actualizados?.length > 0 && (
+                    <div className="collapse collapse-arrow bg-success/10 border border-success">
+                      <input type="checkbox" defaultChecked />
+                      <div className="collapse-title font-bold text-success">
+                        ✅ Modelos que se actualizarán (
+                        {previewData.actualizados.length})
+                      </div>
+                      <div className="collapse-content max-h-60 overflow-y-auto">
+                        {previewData.actualizados.map(
+                          (item: any, idx: number) => (
+                            <div
+                              key={idx}
+                              className="p-3 bg-base-100 rounded-lg mb-2"
+                            >
+                              <p className="font-bold text-base">
+                                {item.modelo}
+                              </p>
+                              <div className="grid grid-cols-2 gap-3 mt-2 text-sm">
+                                <div className="text-base-content/60">
+                                  <p className="font-semibold mb-1">Antes:</p>
+                                  <p>
+                                    Precio base: ${item.precio_anterior.precio}
+                                  </p>
+                                  <p>
+                                    Con tarjeta: $
+                                    {item.precio_anterior.precioTarjeta}
+                                  </p>
+                                </div>
+                                <div className="text-success">
+                                  <p className="font-semibold mb-1">Después:</p>
+                                  <p>
+                                    Precio base: ${item.precio_nuevo.precio}
+                                  </p>
+                                  <p>
+                                    Con tarjeta: $
+                                    {item.precio_nuevo.precioTarjeta}
+                                  </p>
+                                </div>
+                              </div>
                             </div>
-                            <div className="text-success">
-                              <p className="font-semibold mb-1">Después:</p>
-                              <p>Precio base: ${item.precio_nuevo.precio}</p>
-                              <p>Con tarjeta: ${item.precio_nuevo.precioTarjeta}</p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
+                          )
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
                 {/* Precios adicionales que se crearán */}
-                {tipo === "adicional" && previewData.precios_creados?.length > 0 && (
-                  <div className="collapse collapse-arrow bg-success/10 border border-success">
-                    <input type="checkbox" defaultChecked />
-                    <div className="collapse-title font-bold text-success">
-                      ✅ Precios que se crearán ({previewData.precios_creados.length})
+                {tipo === "adicional" &&
+                  previewData.precios_creados?.length > 0 && (
+                    <div className="collapse collapse-arrow bg-success/10 border border-success">
+                      <input type="checkbox" defaultChecked />
+                      <div className="collapse-title font-bold text-success">
+                        ✅ Precios que se crearán (
+                        {previewData.precios_creados.length})
+                      </div>
+                      <div className="collapse-content max-h-60 overflow-y-auto">
+                        {previewData.precios_creados.map(
+                          (item: any, idx: number) => (
+                            <div
+                              key={idx}
+                              className="p-2 bg-base-100 rounded mb-2"
+                            >
+                              <p className="font-bold">{item.modelo}</p>
+                              <div className="text-sm">
+                                <p className="text-base-content/60">
+                                  Nombre: {item.nuevo_precio.nombre_precio}
+                                </p>
+                                <p className="text-success">
+                                  ${item.nuevo_precio.precio} / $
+                                  {item.nuevo_precio.precioTarjeta}
+                                </p>
+                              </div>
+                            </div>
+                          )
+                        )}
+                      </div>
                     </div>
-                    <div className="collapse-content max-h-60 overflow-y-auto">
-                      {previewData.precios_creados.map((item: any, idx: number) => (
-                        <div key={idx} className="p-2 bg-base-100 rounded mb-2">
-                          <p className="font-bold">{item.modelo}</p>
-                          <div className="text-sm">
-                            <p className="text-base-content/60">
-                              Nombre: {item.nuevo_precio.nombre_precio}
-                            </p>
-                            <p className="text-success">
-                              ${item.nuevo_precio.precio} / ${item.nuevo_precio.precioTarjeta}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                  )}
 
                 {/* Modelos con pedidos activos */}
                 {previewData.con_pedidos_activos.length > 0 && (
                   <div className="collapse collapse-arrow bg-warning/10 border border-warning">
                     <input type="checkbox" defaultChecked />
                     <div className="collapse-title font-bold text-warning">
-                      ⚠️ Modelos con pedidos activos - NO se actualizarán ({previewData.con_pedidos_activos.length})
+                      ⚠️ Modelos con pedidos activos - NO se actualizarán (
+                      {previewData.con_pedidos_activos.length})
                     </div>
                     <div className="collapse-content max-h-60 overflow-y-auto">
-                      {previewData.con_pedidos_activos.map((item: any, idx: number) => (
-                        <div key={idx} className="p-2 bg-base-100 rounded mb-2">
-                          <p className="font-bold">{item.modelo}</p>
-                          <p className="text-sm text-base-content/60">
-                            {item.pedidos_activos.length} pedidos activos
-                          </p>
-                        </div>
-                      ))}
+                      {previewData.con_pedidos_activos.map(
+                        (item: any, idx: number) => (
+                          <div
+                            key={idx}
+                            className="p-2 bg-base-100 rounded mb-2"
+                          >
+                            <p className="font-bold">{item.modelo}</p>
+                            <p className="text-sm text-base-content/60">
+                              {item.pedidos_activos.length} pedidos activos
+                            </p>
+                          </div>
+                        )
+                      )}
                     </div>
                   </div>
                 )}
@@ -589,14 +724,20 @@ const PreciosMasivos: React.FC<PreciosMasivosProps> = ({
                   <div className="collapse collapse-arrow bg-error/10 border border-error">
                     <input type="checkbox" />
                     <div className="collapse-title font-bold text-error">
-                      🚫 Modelos excluidos manualmente ({previewData.modelos_excluidos.length})
+                      🚫 Modelos excluidos manualmente (
+                      {previewData.modelos_excluidos.length})
                     </div>
                     <div className="collapse-content max-h-60 overflow-y-auto">
-                      {previewData.modelos_excluidos.map((item: any, idx: number) => (
-                        <div key={idx} className="p-2 bg-base-100 rounded mb-2">
-                          <p className="font-bold">{item.modelo}</p>
-                        </div>
-                      ))}
+                      {previewData.modelos_excluidos.map(
+                        (item: any, idx: number) => (
+                          <div
+                            key={idx}
+                            className="p-2 bg-base-100 rounded mb-2"
+                          >
+                            <p className="font-bold">{item.modelo}</p>
+                          </div>
+                        )
+                      )}
                     </div>
                   </div>
                 )}
@@ -640,8 +781,13 @@ const PreciosMasivos: React.FC<PreciosMasivosProps> = ({
                   />
                 </svg>
                 <div>
-                  <h3 className="font-bold text-xl">¡Actualización Completada!</h3>
-                  <p className="text-lg">{resultData.resumen.exitosos} modelos actualizados correctamente</p>
+                  <h3 className="font-bold text-xl">
+                    ¡Actualización Completada!
+                  </h3>
+                  <p className="text-lg">
+                    {resultData.resumen.exitosos} modelos actualizados
+                    correctamente
+                  </p>
                 </div>
               </div>
 
@@ -649,100 +795,145 @@ const PreciosMasivos: React.FC<PreciosMasivosProps> = ({
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="bg-success/10 p-4 rounded-lg text-center border-2 border-success">
                   <div className="text-sm text-base-content/60">Exitosos</div>
-                  <div className="text-4xl font-bold text-success">{resultData.resumen.exitosos}</div>
+                  <div className="text-4xl font-bold text-success">
+                    {resultData.resumen.exitosos}
+                  </div>
                 </div>
                 <div className="bg-warning/10 p-4 rounded-lg text-center border-2 border-warning">
-                  <div className="text-sm text-base-content/60">No Actualizados</div>
-                  <div className="text-4xl font-bold text-warning">{resultData.resumen.no_actualizados || 0}</div>
+                  <div className="text-sm text-base-content/60">
+                    No Actualizados
+                  </div>
+                  <div className="text-4xl font-bold text-warning">
+                    {resultData.resumen.no_actualizados || 0}
+                  </div>
                 </div>
                 <div className="bg-error/10 p-4 rounded-lg text-center border-2 border-error">
                   <div className="text-sm text-base-content/60">Excluidos</div>
-                  <div className="text-4xl font-bold text-error">{resultData.resumen.excluidos}</div>
+                  <div className="text-4xl font-bold text-error">
+                    {resultData.resumen.excluidos}
+                  </div>
                 </div>
                 <div className="bg-base-200 p-4 rounded-lg text-center border-2 border-base-300">
                   <div className="text-sm text-base-content/60">Total</div>
-                  <div className="text-4xl font-bold text-primary">{resultData.resumen.total_modelos}</div>
+                  <div className="text-4xl font-bold text-primary">
+                    {resultData.resumen.total_modelos}
+                  </div>
                 </div>
               </div>
 
               {/* Detalles de actualizaciones */}
-              {tipo === "actualizar" && resultData.detalles?.actualizados?.length > 0 && (
-                <div className="collapse collapse-arrow bg-success/10 border-2 border-success">
-                  <input type="checkbox" defaultChecked />
-                  <div className="collapse-title font-bold text-success text-lg">
-                    ✅ Modelos actualizados exitosamente ({resultData.detalles.actualizados.length})
-                  </div>
-                  <div className="collapse-content max-h-80 overflow-y-auto">
-                    <div className="space-y-2 mt-2">
-                      {resultData.detalles.actualizados.map((item: any, idx: number) => (
-                        <div key={idx} className="bg-base-100 p-3 rounded-lg shadow">
-                          <p className="font-bold text-lg">{item.modelo}</p>
-                          <div className="text-sm mt-2 grid grid-cols-2 gap-4">
-                            <div className="text-base-content/60">
-                              <p className="font-semibold mb-2">Antes:</p>
-                              <p>Costo: ${item.precio_anterior.costo}</p>
-                              <p>Precio base: ${item.precio_anterior.precio}</p>
-                              <p>Con tarjeta: ${item.precio_anterior.precioTarjeta}</p>
+              {tipo === "actualizar" &&
+                resultData.detalles?.actualizados?.length > 0 && (
+                  <div className="collapse collapse-arrow bg-success/10 border-2 border-success">
+                    <input type="checkbox" defaultChecked />
+                    <div className="collapse-title font-bold text-success text-lg">
+                      ✅ Modelos actualizados exitosamente (
+                      {resultData.detalles.actualizados.length})
+                    </div>
+                    <div className="collapse-content max-h-80 overflow-y-auto">
+                      <div className="space-y-2 mt-2">
+                        {resultData.detalles.actualizados.map(
+                          (item: any, idx: number) => (
+                            <div
+                              key={idx}
+                              className="bg-base-100 p-3 rounded-lg shadow"
+                            >
+                              <p className="font-bold text-lg">{item.modelo}</p>
+                              <div className="text-sm mt-2 grid grid-cols-2 gap-4">
+                                <div className="text-base-content/60">
+                                  <p className="font-semibold mb-2">Antes:</p>
+                                  <p>Costo: ${item.precio_anterior.costo}</p>
+                                  <p>
+                                    Precio base: ${item.precio_anterior.precio}
+                                  </p>
+                                  <p>
+                                    Con tarjeta: $
+                                    {item.precio_anterior.precioTarjeta}
+                                  </p>
+                                </div>
+                                <div className="text-success">
+                                  <p className="font-semibold mb-2">Después:</p>
+                                  <p className="font-medium">
+                                    Costo: ${item.precio_nuevo.costo}
+                                  </p>
+                                  <p className="font-medium">
+                                    Precio base: ${item.precio_nuevo.precio}
+                                  </p>
+                                  <p className="font-medium">
+                                    Con tarjeta: $
+                                    {item.precio_nuevo.precioTarjeta}
+                                  </p>
+                                </div>
+                              </div>
                             </div>
-                            <div className="text-success">
-                              <p className="font-semibold mb-2">Después:</p>
-                              <p className="font-medium">Costo: ${item.precio_nuevo.costo}</p>
-                              <p className="font-medium">Precio base: ${item.precio_nuevo.precio}</p>
-                              <p className="font-medium">Con tarjeta: ${item.precio_nuevo.precioTarjeta}</p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
+                          )
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
 
               {/* Precios adicionales creados */}
-              {tipo === "adicional" && resultData.detalles?.precios_creados?.length > 0 && (
-                <div className="collapse collapse-arrow bg-success/10 border-2 border-success">
-                  <input type="checkbox" defaultChecked />
-                  <div className="collapse-title font-bold text-success text-lg">
-                    ✅ Precios adicionales creados ({resultData.detalles.precios_creados.length})
-                  </div>
-                  <div className="collapse-content max-h-80 overflow-y-auto">
-                    <div className="space-y-2 mt-2">
-                      {resultData.detalles.precios_creados.map((item: any, idx: number) => (
-                        <div key={idx} className="bg-base-100 p-3 rounded-lg shadow">
-                          <p className="font-bold text-lg">{item.modelo}</p>
-                          <div className="text-sm mt-2">
-                            <p className="text-base-content/60">
-                              Nombre: {item.nuevo_precio.nombre_precio}
-                            </p>
-                            <p className="text-base-content/60">
-                              Costo: ${item.nuevo_precio.costo}
-                            </p>
-                            <p className="text-success font-bold">
-                              Precio: ${item.nuevo_precio.precio} / Tarjeta: ${item.nuevo_precio.precioTarjeta}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
+              {tipo === "adicional" &&
+                resultData.detalles?.precios_creados?.length > 0 && (
+                  <div className="collapse collapse-arrow bg-success/10 border-2 border-success">
+                    <input type="checkbox" defaultChecked />
+                    <div className="collapse-title font-bold text-success text-lg">
+                      ✅ Precios adicionales creados (
+                      {resultData.detalles.precios_creados.length})
+                    </div>
+                    <div className="collapse-content max-h-80 overflow-y-auto">
+                      <div className="space-y-2 mt-2">
+                        {resultData.detalles.precios_creados.map(
+                          (item: any, idx: number) => (
+                            <div
+                              key={idx}
+                              className="bg-base-100 p-3 rounded-lg shadow"
+                            >
+                              <p className="font-bold text-lg">{item.modelo}</p>
+                              <div className="text-sm mt-2">
+                                <p className="text-base-content/60">
+                                  Nombre: {item.nuevo_precio.nombre_precio}
+                                </p>
+                                <p className="text-base-content/60">
+                                  Costo: ${item.nuevo_precio.costo}
+                                </p>
+                                <p className="text-success font-bold">
+                                  Precio: ${item.nuevo_precio.precio} / Tarjeta:
+                                  ${item.nuevo_precio.precioTarjeta}
+                                </p>
+                              </div>
+                            </div>
+                          )
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
 
               {/* Modelos con pedidos activos */}
               {resultData.detalles?.con_pedidos_activos?.length > 0 && (
                 <div className="collapse collapse-arrow bg-warning/10 border-2 border-warning">
                   <input type="checkbox" />
                   <div className="collapse-title font-bold text-warning text-lg">
-                    ⚠️ No actualizados - Tienen pedidos activos ({resultData.detalles.con_pedidos_activos.length})
+                    ⚠️ No actualizados - Tienen pedidos activos (
+                    {resultData.detalles.con_pedidos_activos.length})
                   </div>
                   <div className="collapse-content max-h-60 overflow-y-auto">
                     <div className="space-y-2 mt-2">
-                      {resultData.detalles.con_pedidos_activos.map((item: any, idx: number) => (
-                        <div key={idx} className="bg-base-100 p-3 rounded-lg shadow">
-                          <p className="font-bold">{item.modelo}</p>
-                          <p className="text-sm text-warning">{item.pedidos_activos.length} pedidos activos</p>
-                        </div>
-                      ))}
+                      {resultData.detalles.con_pedidos_activos.map(
+                        (item: any, idx: number) => (
+                          <div
+                            key={idx}
+                            className="bg-base-100 p-3 rounded-lg shadow"
+                          >
+                            <p className="font-bold">{item.modelo}</p>
+                            <p className="text-sm text-warning">
+                              {item.pedidos_activos.length} pedidos activos
+                            </p>
+                          </div>
+                        )
+                      )}
                     </div>
                   </div>
                 </div>
@@ -753,24 +944,33 @@ const PreciosMasivos: React.FC<PreciosMasivosProps> = ({
                 <div className="collapse collapse-arrow bg-error/10 border-2 border-error">
                   <input type="checkbox" />
                   <div className="collapse-title font-bold text-error text-lg">
-                    🚫 Excluidos manualmente ({resultData.detalles.modelos_excluidos.length})
+                    🚫 Excluidos manualmente (
+                    {resultData.detalles.modelos_excluidos.length})
                   </div>
                   <div className="collapse-content max-h-60 overflow-y-auto">
                     <div className="space-y-2 mt-2">
-                      {resultData.detalles.modelos_excluidos.map((item: any, idx: number) => (
-                        <div key={idx} className="bg-base-100 p-3 rounded-lg shadow">
-                          <p className="font-bold">{item.modelo}</p>
-                        </div>
-                      ))}
+                      {resultData.detalles.modelos_excluidos.map(
+                        (item: any, idx: number) => (
+                          <div
+                            key={idx}
+                            className="bg-base-100 p-3 rounded-lg shadow"
+                          >
+                            <p className="font-bold">{item.modelo}</p>
+                          </div>
+                        )
+                      )}
                     </div>
                   </div>
                 </div>
               )}
 
-              <button className="btn btn-primary btn-lg w-full" onClick={() => {
-                onSuccess();
-                handleClose();
-              }}>
+              <button
+                className="btn btn-primary btn-lg w-full"
+                onClick={() => {
+                  onSuccess();
+                  handleClose();
+                }}
+              >
                 Cerrar
               </button>
             </div>

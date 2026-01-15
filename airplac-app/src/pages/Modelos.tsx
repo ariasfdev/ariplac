@@ -224,6 +224,24 @@ const Modelos = () => {
     }
   };
 
+  const handleSavePrecioSilent = async (payload: any) => {
+    try {
+      // El payload ahora contiene { precios: [...] }
+      await axios.put(
+        `${API_BASE_URL}/stock/precios/${selectedStockForPrecio?.idModelo}`,
+        payload
+      );
+      // Refrescar lista de modelos sin mostrar mensaje
+      const response = await axios.get(`${API_BASE_URL}/modelos/`);
+      setModelos(response.data);
+    } catch (err: any) {
+      console.error("Error al guardar los precios:", err);
+      if (err.response) {
+        console.error("Detalles del error:", err.response.data);
+      }
+    }
+  };
+
   // Nueva función para mostrar el modal de confirmación
   const handleDeleteClick = (modeloId: string) => {
     setDeleteModeloId(modeloId);
@@ -610,6 +628,7 @@ const Modelos = () => {
         onClose={() => setIsModificarPrecioOpen(false)}
         precio={null}
         onSave={handleSavePrecio}
+        onSaveSilent={handleSavePrecioSilent}
         modelo={selectedStockForPrecio}
       />
 
