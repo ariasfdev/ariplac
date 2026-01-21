@@ -2,14 +2,13 @@
 
 import React, { useEffect, useState, useMemo, useCallback } from "react"
 import { useAppContext } from "../context/AppContext"
-import { API_BASE_URL } from "../config"
+import { api } from "../services/api"
 import Modal from "./Modal"
 import NuevoPedido from "./NuevoPedido"
 import ErrorModal from "./ErrorModal"
 import RemitoModal from "./RemitoModal"
 import SuccessModal from "./SuccessModal"
 import ConfirmActionModal from "./ConfirmActionModal"
-import axios from "axios"
 
 // Componente para el modal de comentarios
 const ComentarioModal: React.FC<{
@@ -460,8 +459,9 @@ const TableCell: React.FC<{
       const producto = row.productos && row.productos[0];
       if (producto && producto.idModelo && producto.id_precio) {
         setLoadingPrecio(true);
-        axios.get(`${API_BASE_URL}/stock/precios/${producto.idModelo}`)
-          .then(res => {
+        api
+          .get(`/stock/precios/${producto.idModelo}`)
+          .then((res) => {
             setPreciosModelo(res.data || []);
             producto.preciosModelo = res.data || [];
             setLoadingPrecio(false);
@@ -784,35 +784,21 @@ const TablePedidos: React.FC = () => {
     setModalOpen(false)
 
     try {
-      let response
       if (tipo === "eliminar") {
-        response = await fetch(`${API_BASE_URL}/pedidos/eliminar/${pedidoId}`, {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-        })
+        await api.delete(`/pedidos/eliminar/${pedidoId}`)
       } else if (tipo === "entregar") {
-        response = await fetch(`${API_BASE_URL}/pedidos/entregado/${pedidoId}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-        })
+        await api.put(`/pedidos/entregado/${pedidoId}`)
       }
 
-      if (response?.ok) {
-        await fetchPedidos() // Esperar a que se complete la actualización
-        setSuccessMessage(
-          tipo === "eliminar" ? "El pedido se eliminó correctamente." : "El pedido se marcó como entregado.",
-        )
-      } else {
-        const errorData = await response?.json()
-        setErrorMessage(
-          `Error al ${tipo === "eliminar" ? "eliminar" : "cambiar el estado del"} pedido: ${errorData.message}`,
-        )
-      }
-    } catch (error) {
-      console.error("Error ejecutando la acción:", error)
-      setErrorMessage(
-        `Ocurrió un error al intentar ${tipo === "eliminar" ? "eliminar" : "cambiar el estado del"} pedido.`,
+      await fetchPedidos()
+      setSuccessMessage(
+        tipo === "eliminar" ? "El pedido se eliminó correctamente." : "El pedido se marcó como entregado.",
       )
+    } catch (error: any) {
+      console.error("Error ejecutando la acción:", error)
+      const message = error?.response?.data?.message ||
+        `Ocurrió un error al intentar ${tipo === "eliminar" ? "eliminar" : "cambiar el estado del"} pedido.`
+      setErrorMessage(message)
     }
   }, [accionActual, fetchPedidos, setSuccessMessage, setErrorMessage, setAccionActual, setModalOpen])
 
@@ -824,21 +810,13 @@ const TablePedidos: React.FC = () => {
   const handleComentarioCliente = useCallback(
     async (pedidoId: string, comentario: string) => {
       try {
-        const response = await fetch(`${API_BASE_URL}/pedidos/comentario/${pedidoId}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            comentario,
-            tipo: "cliente",
-          }),
+        await api.post(`/pedidos/comentario/${pedidoId}`, {
+          comentario,
+          tipo: "cliente",
         })
 
-        if (response.ok) {
-          await fetchPedidos()
-          setSuccessMessage("Comentario del cliente guardado exitosamente.")
-        } else {
-          setErrorMessage("Error al guardar el comentario del cliente.")
-        }
+        await fetchPedidos()
+        setSuccessMessage("Comentario del cliente guardado exitosamente.")
       } catch (error) {
         console.error("Error al guardar comentario del cliente:", error)
         setErrorMessage("Error al guardar comentario del cliente.")
@@ -850,21 +828,13 @@ const TablePedidos: React.FC = () => {
   const handleComentarioProducto = useCallback(
     async (pedidoId: string, comentario: string) => {
       try {
-        const response = await fetch(`${API_BASE_URL}/pedidos/${pedidoId}/comentario`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            comentario,
-            tipo: "producto",
-          }),
+        await api.post(`/pedidos/${pedidoId}/comentario`, {
+          comentario,
+          tipo: "producto",
         })
 
-        if (response.ok) {
-          await fetchPedidos()
-          setSuccessMessage("Comentario del producto guardado exitosamente.")
-        } else {
-          setErrorMessage("Error al guardar el comentario del producto.")
-        }
+        await fetchPedidos()
+        setSuccessMessage("Comentario del producto guardado exitosamente.")
       } catch (error) {
         console.error("Error al guardar comentario del producto:", error)
         setErrorMessage("Error al guardar comentario del producto.")

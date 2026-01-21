@@ -1,16 +1,15 @@
-import axios from "axios";
-import { API_BASE_URL } from "../config";
+import { api } from "./api";
 
 
 
 export const getModelos = async () => {
-    const response = await axios.get(`${API_BASE_URL}/modelos/`);
+    const response = await api.get("/modelos/");
     console.log(response.data);
     return response.data;
 };
 
 export const getPrecioByIdModelo = async (idModelo: string) => {
-    const response = await axios.get(`${API_BASE_URL}/stock/precios/${idModelo}`);
+    const response = await api.get(`/stock/precios/${idModelo}`);
     console.log(response.data);
     return response.data;
 };

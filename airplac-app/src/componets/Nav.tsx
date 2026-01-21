@@ -1,5 +1,7 @@
 import React from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { logout } from "../services/auth.service";
+import { useAuth } from "../context/AuthContext";
 
 interface NavProps {
   isNavVisible: boolean;
@@ -8,6 +10,32 @@ interface NavProps {
 
 const Nav: React.FC<NavProps> = ({ isNavVisible, setIsNavVisible }) => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { userRole } = useAuth();
+
+  const getVisibleItems = () => {
+    if (userRole === 'Vendedor') {
+      return ['Pedidos', 'Importar Pedidos', 'Stock'];
+    }
+    if (userRole === 'Admin') {
+      return ['Pedidos', 'Importar Pedidos', 'Stock', 'Modelos', 'Control Stock', 'Precios'];
+    }
+    if (userRole === 'Superadmin') {
+      return ['Pedidos', 'Importar Pedidos', 'Stock', 'Modelos', 'Control Stock', 'Precios', 'Usuarios'];
+    }
+    return [];
+  };
+
+  const visibleItems = getVisibleItems();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate("/login");
+    } catch (error) {
+      console.error("Error al cerrar sesión:", error);
+    }
+  };
 
   const handleLinkClick = () => {
     if (window.innerWidth < 1024) {
@@ -20,18 +48,8 @@ const Nav: React.FC<NavProps> = ({ isNavVisible, setIsNavVisible }) => {
       path: "/home/pedidos",
       label: "Pedidos",
       icon: (
-        <svg
-          className="w-5 h-5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-          />
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
         </svg>
       ),
       description: "Gestión de pedidos y órdenes",
@@ -40,18 +58,8 @@ const Nav: React.FC<NavProps> = ({ isNavVisible, setIsNavVisible }) => {
       path: "/home/pedidos/importar",
       label: "Importar Pedidos",
       icon: (
-        <svg
-          className="w-5 h-5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"
-          />
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
         </svg>
       ),
       description: "Importar pedidos desde archivos",
@@ -60,18 +68,8 @@ const Nav: React.FC<NavProps> = ({ isNavVisible, setIsNavVisible }) => {
       path: "/home/stock",
       label: "Stock",
       icon: (
-        <svg
-          className="w-5 h-5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
-          />
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
         </svg>
       ),
       description: "Control de inventario y stock",
@@ -80,18 +78,8 @@ const Nav: React.FC<NavProps> = ({ isNavVisible, setIsNavVisible }) => {
       path: "/home/modelos",
       label: "Modelos",
       icon: (
-        <svg
-          className="w-5 h-5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-          />
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
         </svg>
       ),
       description: "Catálogo de modelos y productos",
@@ -100,24 +88,9 @@ const Nav: React.FC<NavProps> = ({ isNavVisible, setIsNavVisible }) => {
       path: "/home/trazabilidad",
       label: "Control Stock",
       icon: (
-        <svg
-          className="w-5 h-5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-          />
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-          />
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
       ),
       description: "Movimientos de Stock",
@@ -126,21 +99,21 @@ const Nav: React.FC<NavProps> = ({ isNavVisible, setIsNavVisible }) => {
       path: "/home/precios",
       label: "Precios",
       icon: (
-        <svg
-          className="w-5 h-5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-          />
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
       ),
       description: "Gestión de precios masivos",
+    },
+    {
+      path: "/home/usuarios",
+      label: "Usuarios",
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.856-1.487M15 10a3 3 0 11-6 0 3 3 0 016 0zM15 20H9m6 0h.01M9 20H3v-2a6 6 0 0112 0v2z" />
+        </svg>
+      ),
+      description: "Gestión de usuarios del sistema",
     },
   ];
 
@@ -159,28 +132,14 @@ const Nav: React.FC<NavProps> = ({ isNavVisible, setIsNavVisible }) => {
         <div className="flex items-center gap-3">
           <div className="avatar placeholder">
             <div className="bg-primary-content text-primary rounded-full w-12 h-12 flex items-center justify-center">
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-                />
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
               </svg>
             </div>
           </div>
           <div>
-            <h1 className="text-xl font-bold text-primary-content">
-              Gestión de Negocio
-            </h1>
-            <p className="text-primary-content/80 text-sm">
-              Sistema de administración
-            </p>
+            <h1 className="text-xl font-bold text-primary-content">Gestión de Negocio</h1>
+            <p className="text-primary-content/80 text-sm">Sistema de administración</p>
           </div>
         </div>
       </div>
@@ -191,18 +150,15 @@ const Nav: React.FC<NavProps> = ({ isNavVisible, setIsNavVisible }) => {
           isNavVisible ? "opacity-100" : "opacity-0 pointer-events-none"
         } transition-opacity duration-500`}
       >
-        {/* Sección de navegación principal */}
         <div className="mb-6">
           <h3 className="text-xs font-semibold text-base-content/60 uppercase tracking-wider mb-4 px-2">
             Navegación Principal
           </h3>
 
           <div className="space-y-2">
-            {navItems.map((item) => {
+            {navItems.filter((item) => visibleItems.includes(item.label)).map((item) => {
               const isActive = location.pathname === item.path;
-              const isActiveParent =
-                location.pathname.startsWith(item.path) &&
-                item.path !== "/home/admin";
+              const isActiveParent = location.pathname.startsWith(item.path) && item.path !== "/home/admin";
 
               return (
                 <Link
@@ -215,12 +171,10 @@ const Nav: React.FC<NavProps> = ({ isNavVisible, setIsNavVisible }) => {
                       : "text-base-content hover:bg-base-200 hover:text-primary"
                   }`}
                 >
-                  {/* Indicador de página activa */}
                   {(isActive || isActiveParent) && (
                     <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-8 bg-primary-content rounded-r-full"></div>
                   )}
 
-                  {/* Icono */}
                   <div
                     className={`flex-shrink-0 transition-colors duration-200 ${
                       isActive || isActiveParent
@@ -231,7 +185,6 @@ const Nav: React.FC<NavProps> = ({ isNavVisible, setIsNavVisible }) => {
                     {item.icon}
                   </div>
 
-                  {/* Contenido del enlace */}
                   <div className="flex-1 min-w-0">
                     <div
                       className={`font-medium transition-colors duration-200 ${
@@ -253,7 +206,6 @@ const Nav: React.FC<NavProps> = ({ isNavVisible, setIsNavVisible }) => {
                     </div>
                   </div>
 
-                  {/* Indicador de hover */}
                   <div
                     className={`w-2 h-2 rounded-full transition-all duration-200 ${
                       isActive || isActiveParent
@@ -267,19 +219,26 @@ const Nav: React.FC<NavProps> = ({ isNavVisible, setIsNavVisible }) => {
           </div>
         </div>
 
-        {/* Sección de información del sistema */}
         <div className="mt-auto pt-6 border-t border-base-300">
-          <div className="bg-base-200 rounded-lg p-4">
+          <div className="bg-base-200 rounded-lg p-4 mb-4">
             <div className="flex items-center gap-3 mb-3">
               <div className="w-2 h-2 bg-success rounded-full animate-pulse"></div>
-              <span className="text-sm font-medium text-base-content">
-                Sistema Activo
-              </span>
+              <span className="text-sm font-medium text-base-content">Sistema Activo</span>
             </div>
             <div className="text-xs text-base-content/60">
               Última actualización: {new Date().toLocaleDateString("es-AR")}
             </div>
           </div>
+
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-error/10 hover:bg-error/20 text-error rounded-lg transition-colors duration-200 font-medium"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            Cerrar Sesión
+          </button>
         </div>
       </nav>
     </aside>

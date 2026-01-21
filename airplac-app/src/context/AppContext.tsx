@@ -6,8 +6,7 @@ import React, {
   useEffect,
   useCallback,
 } from "react";
-import axios from "axios";
-import { API_BASE_URL } from "../config";
+import { api } from "../services/api";
 
 interface Pedido {
   id: string;
@@ -46,7 +45,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
   // Función para obtener pedidos desde el backend
   const fetchPedidos = useCallback(async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/pedidos/`);
+      const response = await api.get("/pedidos/");
       console.log(response.data);
       setPedidos(response.data);
     } catch (err) {
