@@ -12,8 +12,6 @@ const Home: React.FC = () => {
     switch (location.pathname) {
       case "/home/pedidos":
         return "Gestión de Pedidos";
-      case "/home/pedidos/importar":
-        return "Importar Pedidos";
       case "/home/stock":
         return "Gestión de Stock";
       case "/home/admin":

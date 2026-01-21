@@ -11,6 +11,7 @@ const Login: React.FC = () => {
   // Estados para login
   const [usuario, setUsuario] = useState('');
   const [contrasena, setContrasena] = useState('');
+  const [mostrarContrasena, setMostrarContrasena] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -140,14 +141,33 @@ const Login: React.FC = () => {
                   <label className="label">
                     <span className="label-text">Contraseña</span>
                   </label>
-                  <input
-                    type="password"
-                    placeholder="Ingresa tu contraseña"
-                    className="input input-bordered"
-                    value={contrasena}
-                    onChange={(e) => setContrasena(e.target.value)}
-                    required
-                  />
+                  <div className="relative">
+                    <input
+                      type={mostrarContrasena ? 'text' : 'password'}
+                      placeholder="Ingresa tu contraseña"
+                      className="input input-bordered w-full pr-12"
+                      value={contrasena}
+                      onChange={(e) => setContrasena(e.target.value)}
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-xs absolute right-2 top-1/2 -translate-y-1/2"
+                      onClick={() => setMostrarContrasena((prev) => !prev)}
+                      aria-label={mostrarContrasena ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                    >
+                      {mostrarContrasena ? (
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 3l18 18M10.477 10.486A2.5 2.5 0 0112 9.5a2.5 2.5 0 012.5 2.5 2.5 2.5 0 01-.986 1.987m-2.614.454a2.5 2.5 0 001.1.059M4.5 4.5C3.158 5.806 2.03 7.346 1.17 9c2.12 4.24 6.12 7 10.83 7 1.425 0 2.79-.25 4.06-.71m2.82-1.77C20.93 12.83 22 11 22 11c-2.12-4.24-6.12-7-10.83-7-.977 0-1.93.1-2.848.29" />
+                        </svg>
+                      ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          <circle cx="12" cy="12" r="3" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
                 </div>
                 <div className="form-control mt-6">
                   <button type="submit" className="btn btn-primary" disabled={loading}>

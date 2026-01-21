@@ -92,6 +92,7 @@ const COLUMNS: Column[] = [
   { key: "fecha", label: "Fecha", visible: true },
   { key: "año", label: "Año", visible: false },
   { key: "cliente", label: "Cliente", visible: true },
+  { key: "vendedor", label: "Vendedor", visible: true },
   { key: "direccion", label: "Dirección", visible: false },
   { key: "contacto", label: "Contacto", visible: false },
   { key: "detalle", label: "Producto", visible: true },

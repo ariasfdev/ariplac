@@ -14,6 +14,8 @@ const Usuarios: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [isEditando, setIsEditando] = useState(false);
+  const [mostrarContrasena, setMostrarContrasena] = useState(false);
+  const [mostrarConfirmar, setMostrarConfirmar] = useState(false);
   const [usuarioEditandoId, setUsuarioEditandoId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -445,28 +447,69 @@ const Usuarios: React.FC = () => {
                 <label className="label">
                   <span className="label-text">Contraseña {!isEditando && '*'}</span>
                 </label>
-                <input
-                  type="password"
-                  placeholder="Mínimo 8 caracteres"
-                  className="input input-bordered"
-                  value={formData.contrasena}
-                  onChange={(e) => setFormData({ ...formData, contrasena: e.target.value })}
-                  required={!isEditando}
-                />
+                <div className="relative">
+                  <input
+                    type={mostrarContrasena ? 'text' : 'password'}
+                    placeholder="Mínimo 8 caracteres"
+                    className="input input-bordered w-full pr-12"
+                    value={formData.contrasena}
+                    onChange={(e) => setFormData({ ...formData, contrasena: e.target.value })}
+                    required={!isEditando}
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-xs absolute right-2 top-1/2 -translate-y-1/2"
+                    onClick={() => setMostrarContrasena((prev) => !prev)}
+                    aria-label={mostrarContrasena ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  >
+                    {mostrarContrasena ? (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 3l18 18M10.477 10.486A2.5 2.5 0 0112 9.5a2.5 2.5 0 012.5 2.5 2.5 2.5 0 01-.986 1.987m-2.614.454a2.5 2.5 0 001.1.059M4.5 4.5C3.158 5.806 2.03 7.346 1.17 9c2.12 4.24 6.12 7 10.83 7 1.425 0 2.79-.25 4.06-.71m2.82-1.77C20.93 12.83 22 11 22 11c-2.12-4.24-6.12-7-10.83-7-.977 0-1.93.1-2.848.29" />
+                      </svg>
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+                <p className="text-xs text-base-content/70 mt-2">
+                  Requisitos: mínimo 8 caracteres, al menos una mayúscula, una minúscula, un número y un símbolo.
+                </p>
               </div>
 
               <div className="form-control md:col-span-2">
                 <label className="label">
                   <span className="label-text">Confirmar Contraseña {!isEditando && '*'}</span>
                 </label>
-                <input
-                  type="password"
-                  placeholder="Repite la contraseña"
-                  className="input input-bordered"
-                  value={formData.confirmarContrasena}
-                  onChange={(e) => setFormData({ ...formData, confirmarContrasena: e.target.value })}
-                  required={!isEditando}
-                />
+                <div className="relative">
+                  <input
+                    type={mostrarConfirmar ? 'text' : 'password'}
+                    placeholder="Repite la contraseña"
+                    className="input input-bordered w-full pr-12"
+                    value={formData.confirmarContrasena}
+                    onChange={(e) => setFormData({ ...formData, confirmarContrasena: e.target.value })}
+                    required={!isEditando}
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-xs absolute right-2 top-1/2 -translate-y-1/2"
+                    onClick={() => setMostrarConfirmar((prev) => !prev)}
+                    aria-label={mostrarConfirmar ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  >
+                    {mostrarConfirmar ? (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 3l18 18M10.477 10.486A2.5 2.5 0 0112 9.5a2.5 2.5 0 012.5 2.5 2.5 2.5 0 01-.986 1.987m-2.614.454a2.5 2.5 0 001.1.059M4.5 4.5C3.158 5.806 2.03 7.346 1.17 9c2.12 4.24 6.12 7 10.83 7 1.425 0 2.79-.25 4.06-.71m2.82-1.77C20.93 12.83 22 11 22 11c-2.12-4.24-6.12-7-10.83-7-.977 0-1.93.1-2.848.29" />
+                      </svg>
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
 
