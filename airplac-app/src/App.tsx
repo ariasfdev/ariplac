@@ -17,6 +17,19 @@ import Modelos from "./pages/Modelos";
 import Trazabilidad from "./pages/trazabilidad";
 import Precios from "./pages/Precios";
 import Usuarios from "./pages/Usuarios";
+import { useAuth } from "./context/AuthContext";
+
+// Componente para proteger rutas por rol
+function RoleProtectedRoute({ children, allowedRoles }: { children: JSX.Element; allowedRoles: string[] }) {
+  const { userRole, loading } = useAuth();
+
+  if (loading) return null;
+  if (!userRole || !allowedRoles.includes(userRole)) {
+    return <Navigate to="/home/pedidos" replace />;
+  }
+
+  return children;
+}
 
 const App: React.FC = () => {
   return (
@@ -37,15 +50,54 @@ const App: React.FC = () => {
               </PrivateRoute>
             }
           >
+            {/* Rutas accesibles por Vendedor, Admin y Superadmin */}
             <Route path="pedidos" element={<Pedidos />} />
-            <Route path="pedidos/importar" element={<ImportarPedido />} />
+            <Route path="pedidos/importar" element={<Pedidos />} />
             <Route path="stock" element={<Stock />} />
-            <Route path="modelos" element={<Modelos />} />
-            <Route path="admin" element={<Admin />} />
-            <Route path="admin/pedidos" element={<Pedidos />} />
-            <Route path="trazabilidad" element={<Trazabilidad />} />
-            <Route path="precios" element={<Precios />} />
-            <Route path="usuarios" element={<Usuarios />} />
+
+            {/* Rutas solo para Admin y Superadmin */}
+            <Route
+              path="modelos"
+              element={
+                <RoleProtectedRoute allowedRoles={["Admin", "Superadmin"]}>
+                  <Modelos />
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
+              path="precios"
+              element={
+                <RoleProtectedRoute allowedRoles={["Admin", "Superadmin"]}>
+                  <Precios />
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
+              path="trazabilidad"
+              element={
+                <RoleProtectedRoute allowedRoles={["Admin", "Superadmin"]}>
+                  <Trazabilidad />
+                </RoleProtectedRoute>
+              }
+            />
+
+            {/* Rutas solo para Superadmin */}
+            <Route
+              path="admin"
+              element={
+                <RoleProtectedRoute allowedRoles={["Superadmin"]}>
+                  <Admin />
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
+              path="usuarios"
+              element={
+                <RoleProtectedRoute allowedRoles={["Superadmin"]}>
+                  <Usuarios />
+                </RoleProtectedRoute>
+              }
+            />
           </Route>
         </Routes>
       </Router>

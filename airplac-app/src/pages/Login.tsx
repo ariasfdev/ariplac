@@ -20,6 +20,9 @@ const Login: React.FC = () => {
   const [codigo, setCodigo] = useState('');
   const [nuevaContrasena, setNuevaContrasena] = useState('');
   const [confirmarContrasena, setConfirmarContrasena] = useState('');
+  const [mostrarNuevaContrasena, setMostrarNuevaContrasena] = useState(false);
+  const [mostrarConfirmarContrasena, setMostrarConfirmarContrasena] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,14 +76,24 @@ const Login: React.FC = () => {
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setFieldErrors({});
 
-    if (nuevaContrasena !== confirmarContrasena) {
-      setError('Las contraseñas no coinciden');
-      return;
+    const newFieldErrors: { [key: string]: string } = {};
+
+    if (!nuevaContrasena) {
+      newFieldErrors.nuevaContrasena = 'La contraseña es requerida';
+    } else if (nuevaContrasena.length < 8) {
+      newFieldErrors.nuevaContrasena = 'La contraseña debe tener al menos 8 caracteres';
     }
 
-    if (nuevaContrasena.length < 8) {
-      setError('La contraseña debe tener al menos 8 caracteres');
+    if (!confirmarContrasena) {
+      newFieldErrors.confirmarContrasena = 'Confirma tu contraseña';
+    } else if (nuevaContrasena !== confirmarContrasena) {
+      newFieldErrors.confirmarContrasena = 'Las contraseñas no coinciden';
+    }
+
+    if (Object.keys(newFieldErrors).length > 0) {
+      setFieldErrors(newFieldErrors);
       return;
     }
 
@@ -88,6 +101,7 @@ const Login: React.FC = () => {
     try {
       await cambiarContrasena({ mail, nuevaContrasena });
       setError(null);
+      setFieldErrors({});
       // Resetear form y volver a login
       setMail('');
       setCodigo('');
@@ -280,36 +294,88 @@ const Login: React.FC = () => {
               <p className="text-sm text-base-content/70 text-center mb-4">
                 Ingresa tu nueva contraseña
               </p>
-              {error && (
-                <div className="alert alert-error text-sm">{error}</div>
-              )}
               <form onSubmit={handleResetPassword}>
                 <div className="form-control mb-4">
                   <label className="label">
                     <span className="label-text">Nueva Contraseña</span>
                   </label>
-                  <input
-                    type="password"
-                    placeholder="Mínimo 8 caracteres"
-                    className="input input-bordered"
-                    value={nuevaContrasena}
-                    onChange={(e) => setNuevaContrasena(e.target.value)}
-                    required
-                  />
+                  <div className="relative">
+                    <input
+                      type={mostrarNuevaContrasena ? 'text' : 'password'}
+                      placeholder="Mínimo 8 caracteres"
+                      className={`input input-bordered w-full pr-12 ${fieldErrors.nuevaContrasena ? 'input-error' : ''}`}
+                      value={nuevaContrasena}
+                      onChange={(e) => {
+                        setNuevaContrasena(e.target.value);
+                        setFieldErrors({ ...fieldErrors, nuevaContrasena: '' });
+                      }}
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-xs absolute right-2 top-1/2 -translate-y-1/2"
+                      onClick={() => setMostrarNuevaContrasena(!mostrarNuevaContrasena)}
+                      aria-label={mostrarNuevaContrasena ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                    >
+                      {mostrarNuevaContrasena ? (
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                        </svg>
+                      ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                  {fieldErrors.nuevaContrasena && (
+                    <p className="text-error text-xs mt-1">{fieldErrors.nuevaContrasena}</p>
+                  )}
                 </div>
                 <div className="form-control mb-4">
                   <label className="label">
                     <span className="label-text">Confirmar Contraseña</span>
                   </label>
-                  <input
-                    type="password"
-                    placeholder="Repite tu contraseña"
-                    className="input input-bordered"
-                    value={confirmarContrasena}
-                    onChange={(e) => setConfirmarContrasena(e.target.value)}
-                    required
-                  />
+                  <div className="relative">
+                    <input
+                      type={mostrarConfirmarContrasena ? 'text' : 'password'}
+                      placeholder="Repite tu contraseña"
+                      className={`input input-bordered w-full pr-12 ${fieldErrors.confirmarContrasena ? 'input-error' : ''}`}
+                      value={confirmarContrasena}
+                      onChange={(e) => {
+                        setConfirmarContrasena(e.target.value);
+                        setFieldErrors({ ...fieldErrors, confirmarContrasena: '' });
+                      }}
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-xs absolute right-2 top-1/2 -translate-y-1/2"
+                      onClick={() => setMostrarConfirmarContrasena(!mostrarConfirmarContrasena)}
+                      aria-label={mostrarConfirmarContrasena ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                    >
+                      {mostrarConfirmarContrasena ? (
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                        </svg>
+                      ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                  {fieldErrors.confirmarContrasena && (
+                    <p className="text-error text-xs mt-1">{fieldErrors.confirmarContrasena}</p>
+                  )}
                 </div>
+                {error && (
+                  <div className="mb-4">
+                    <p className="text-error text-sm">{error}</p>
+                  </div>
+                )}
                 <div className="form-control mt-6 gap-2">
                   <button type="submit" className="btn btn-primary" disabled={loading}>
                     {loading ? 'Cambiando...' : 'Cambiar Contraseña'}

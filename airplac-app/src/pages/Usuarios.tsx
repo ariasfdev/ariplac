@@ -20,6 +20,13 @@ const Usuarios: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmAction, setConfirmAction] = useState<{ usuarioId: string; action: string; razon?: string } | null>(null);
+  const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
+  const [resetPasswordData, setResetPasswordData] = useState({ usuarioId: '', newPassword: '', confirmPassword: '' });
+  const [resetPasswordError, setResetPasswordError] = useState<string | null>(null);
+  const [modalError, setModalError] = useState<string | null>(null);
+  const [mostrarNuevaPassword, setMostrarNuevaPassword] = useState(false);
+  const [mostrarConfirmarPassword, setMostrarConfirmarPassword] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
 
   // Formulario para crear/editar usuario
   const [formData, setFormData] = useState({
@@ -61,36 +68,44 @@ const Usuarios: React.FC = () => {
 
   const handleCrearUsuario = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
+    setModalError(null);
+    setFieldErrors({});
+
+    const newFieldErrors: { [key: string]: string } = {};
 
     // Validar todos los campos requeridos
-    if (!formData.nombreUsuario || !formData.razonSocial || !formData.domicilio || 
-        !formData.telefono || !formData.mail || !formData.rolId) {
-      setError('Todos los campos son requeridos');
+    if (!formData.nombreUsuario) newFieldErrors.nombreUsuario = 'Este campo es requerido';
+    if (!formData.razonSocial) newFieldErrors.razonSocial = 'Este campo es requerido';
+    if (!formData.domicilio) newFieldErrors.domicilio = 'Este campo es requerido';
+    if (!formData.telefono) newFieldErrors.telefono = 'Este campo es requerido';
+    if (!formData.mail) newFieldErrors.mail = 'Este campo es requerido';
+    if (!formData.rolId) newFieldErrors.rolId = 'Selecciona un rol';
+
+    // Si es nuevo usuario, validar contraseña
+    if (!isEditando) {
+      if (!formData.contrasena) {
+        newFieldErrors.contrasena = 'La contraseña es requerida';
+      } else if (formData.contrasena.length < 8) {
+        newFieldErrors.contrasena = 'La contraseña debe tener al menos 8 caracteres';
+      }
+      
+      if (formData.contrasena && !formData.confirmarContrasena) {
+        newFieldErrors.confirmarContrasena = 'Confirma tu contraseña';
+      } else if (formData.contrasena !== formData.confirmarContrasena) {
+        newFieldErrors.confirmarContrasena = 'Las contraseñas no coinciden';
+      }
+    }
+
+    if (Object.keys(newFieldErrors).length > 0) {
+      setFieldErrors(newFieldErrors);
       return;
     }
 
     // Validar rol contra la lista disponible
     const rolValido = roles.find((rol) => rol._id === formData.rolId);
     if (!rolValido) {
-      setError('Selecciona un rol válido');
+      setFieldErrors({ rolId: 'Selecciona un rol válido' });
       return;
-    }
-
-    // Si es nuevo usuario, validar contraseña
-    if (!isEditando) {
-      if (!formData.contrasena) {
-        setError('La contraseña es requerida');
-        return;
-      }
-      if (formData.contrasena !== formData.confirmarContrasena) {
-        setError('Las contraseñas no coinciden');
-        return;
-      }
-      if (formData.contrasena.length < 8) {
-        setError('La contraseña debe tener al menos 8 caracteres');
-        return;
-      }
     }
 
     setIsCreating(true);
@@ -133,12 +148,31 @@ const Usuarios: React.FC = () => {
         confirmarContrasena: '',
         rolId: '',
       });
+      setModalError(null);
+      setFieldErrors({});
       setIsModalOpen(false);
       setIsEditando(false);
       setUsuarioEditandoId(null);
       await fetchUsuarios();
     } catch (err: any) {
-      setError(err?.response?.data?.message || 'Error al guardar usuario');
+      const errorMsg = err?.response?.data?.message || '';
+      
+      // Detectar errores de duplicación
+      if (errorMsg.includes('E11000') || errorMsg.includes('duplicate key')) {
+        const newFieldErrors: { [key: string]: string } = {};
+        
+        if (errorMsg.includes('nombreUsuario')) {
+          newFieldErrors.nombreUsuario = 'Este nombre de usuario ya existe';
+        }
+        if (errorMsg.includes('mail')) {
+          newFieldErrors.mail = 'Este correo electrónico ya está registrado';
+        }
+        
+        setFieldErrors(newFieldErrors);
+      } else {
+        // Para otros errores del servidor, intentar asignar a un campo relevante o mostrar como error general
+        setFieldErrors({ general: errorMsg || 'Error al guardar usuario' });
+      }
     } finally {
       setIsCreating(false);
     }
@@ -180,18 +214,32 @@ const Usuarios: React.FC = () => {
   };
 
   const handleResetPassword = async (usuarioId: string) => {
-    const newPassword = prompt('Ingresa la nueva contraseña:');
-    if (!newPassword || newPassword.length < 8) {
-      setError('La contraseña debe tener al menos 8 caracteres');
+    setResetPasswordData({ usuarioId, newPassword: '', confirmPassword: '' });
+    setResetPasswordError(null);
+    setShowResetPasswordModal(true);
+  };
+
+  const handleConfirmResetPassword = async () => {
+    setResetPasswordError(null);
+
+    if (!resetPasswordData.newPassword || resetPasswordData.newPassword.length < 8) {
+      setResetPasswordError('La contraseña debe tener al menos 8 caracteres');
+      return;
+    }
+
+    if (resetPasswordData.newPassword !== resetPasswordData.confirmPassword) {
+      setResetPasswordError('Las contraseñas no coinciden');
       return;
     }
 
     try {
-      await resetearContraseña(usuarioId, newPassword);
+      await resetearContraseña(resetPasswordData.usuarioId, resetPasswordData.newPassword);
       setSuccess('Contraseña reseteada exitosamente');
+      setShowResetPasswordModal(false);
+      setResetPasswordData({ usuarioId: '', newPassword: '', confirmPassword: '' });
       await fetchUsuarios();
     } catch (err: any) {
-      setError(err?.response?.data?.message || 'Error al resetear contraseña');
+      setResetPasswordError(err?.response?.data?.message || 'Error al resetear contraseña');
     }
   };
 
@@ -231,6 +279,8 @@ const Usuarios: React.FC = () => {
                 confirmarContrasena: '',
                 rolId: '',
               });
+              setModalError(null);
+              setFieldErrors({});
               setIsModalOpen(true);
             }}>
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -351,6 +401,7 @@ const Usuarios: React.FC = () => {
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
         <div className="bg-base-200 p-6 rounded-lg max-w-2xl mx-auto max-h-[90vh] overflow-y-auto">
           <h2 className="text-xl font-bold mb-4">{isEditando ? 'Modificar Usuario' : 'Crear Nuevo Usuario'}</h2>
+          
           <form onSubmit={handleCrearUsuario}>
             {/* Primera columna */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -361,11 +412,17 @@ const Usuarios: React.FC = () => {
                 <input
                   type="text"
                   placeholder="Nombre de usuario"
-                  className="input input-bordered"
+                  className={`input input-bordered ${fieldErrors.nombreUsuario ? 'input-error' : ''}`}
                   value={formData.nombreUsuario}
-                  onChange={(e) => setFormData({ ...formData, nombreUsuario: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, nombreUsuario: e.target.value });
+                    setFieldErrors({ ...fieldErrors, nombreUsuario: '' });
+                  }}
                   required
                 />
+                {fieldErrors.nombreUsuario && (
+                  <p className="text-error text-xs mt-1">{fieldErrors.nombreUsuario}</p>
+                )}
               </div>
 
               <div className="form-control">
@@ -375,11 +432,17 @@ const Usuarios: React.FC = () => {
                 <input
                   type="text"
                   placeholder="Nombre y apellido"
-                  className="input input-bordered"
+                  className={`input input-bordered ${fieldErrors.razonSocial ? 'input-error' : ''}`}
                   value={formData.razonSocial}
-                  onChange={(e) => setFormData({ ...formData, razonSocial: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, razonSocial: e.target.value });
+                    setFieldErrors({ ...fieldErrors, razonSocial: '' });
+                  }}
                   required
                 />
+                {fieldErrors.razonSocial && (
+                  <p className="text-error text-xs mt-1">{fieldErrors.razonSocial}</p>
+                )}
               </div>
 
               <div className="form-control">
@@ -389,11 +452,17 @@ const Usuarios: React.FC = () => {
                 <input
                   type="text"
                   placeholder="Domicilio"
-                  className="input input-bordered"
+                  className={`input input-bordered ${fieldErrors.domicilio ? 'input-error' : ''}`}
                   value={formData.domicilio}
-                  onChange={(e) => setFormData({ ...formData, domicilio: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, domicilio: e.target.value });
+                    setFieldErrors({ ...fieldErrors, domicilio: '' });
+                  }}
                   required
                 />
+                {fieldErrors.domicilio && (
+                  <p className="text-error text-xs mt-1">{fieldErrors.domicilio}</p>
+                )}
               </div>
 
               <div className="form-control">
@@ -403,11 +472,17 @@ const Usuarios: React.FC = () => {
                 <input
                   type="tel"
                   placeholder="Teléfono"
-                  className="input input-bordered"
+                  className={`input input-bordered ${fieldErrors.telefono ? 'input-error' : ''}`}
                   value={formData.telefono}
-                  onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, telefono: e.target.value });
+                    setFieldErrors({ ...fieldErrors, telefono: '' });
+                  }}
                   required
                 />
+                {fieldErrors.telefono && (
+                  <p className="text-error text-xs mt-1">{fieldErrors.telefono}</p>
+                )}
               </div>
 
               <div className="form-control">
@@ -417,11 +492,17 @@ const Usuarios: React.FC = () => {
                 <input
                   type="email"
                   placeholder="usuario@email.com"
-                  className="input input-bordered"
+                  className={`input input-bordered ${fieldErrors.mail ? 'input-error' : ''}`}
                   value={formData.mail}
-                  onChange={(e) => setFormData({ ...formData, mail: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, mail: e.target.value });
+                    setFieldErrors({ ...fieldErrors, mail: '' });
+                  }}
                   required
                 />
+                {fieldErrors.mail && (
+                  <p className="text-error text-xs mt-1">{fieldErrors.mail}</p>
+                )}
               </div>
 
               <div className="form-control">
@@ -429,9 +510,12 @@ const Usuarios: React.FC = () => {
                   <span className="label-text">Rol *</span>
                 </label>
                 <select
-                  className="select select-bordered"
+                  className={`select select-bordered ${fieldErrors.rolId ? 'select-error' : ''}`}
                   value={formData.rolId}
-                  onChange={(e) => setFormData({ ...formData, rolId: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, rolId: e.target.value });
+                    setFieldErrors({ ...fieldErrors, rolId: '' });
+                  }}
                   required
                 >
                   <option value="">Selecciona un rol</option>
@@ -441,63 +525,79 @@ const Usuarios: React.FC = () => {
                     </option>
                   ))}
                 </select>
+                {fieldErrors.rolId && (
+                  <p className="text-error text-xs mt-1">{fieldErrors.rolId}</p>
+                )}
               </div>
 
-              <div className="form-control md:col-span-2">
-                <label className="label">
-                  <span className="label-text">Contraseña {!isEditando && '*'}</span>
-                </label>
-                <div className="relative">
-                  <input
-                    type={mostrarContrasena ? 'text' : 'password'}
-                    placeholder="Mínimo 8 caracteres"
-                    className="input input-bordered w-full pr-12"
-                    value={formData.contrasena}
-                    onChange={(e) => setFormData({ ...formData, contrasena: e.target.value })}
-                    required={!isEditando}
-                  />
-                  <button
-                    type="button"
-                    className="btn btn-ghost btn-xs absolute right-2 top-1/2 -translate-y-1/2"
-                    onClick={() => setMostrarContrasena((prev) => !prev)}
-                    aria-label={mostrarContrasena ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                  >
-                    {mostrarContrasena ? (
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 3l18 18M10.477 10.486A2.5 2.5 0 0112 9.5a2.5 2.5 0 012.5 2.5 2.5 2.5 0 01-.986 1.987m-2.614.454a2.5 2.5 0 001.1.059M4.5 4.5C3.158 5.806 2.03 7.346 1.17 9c2.12 4.24 6.12 7 10.83 7 1.425 0 2.79-.25 4.06-.71m2.82-1.77C20.93 12.83 22 11 22 11c-2.12-4.24-6.12-7-10.83-7-.977 0-1.93.1-2.848.29" />
-                      </svg>
-                    ) : (
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        <circle cx="12" cy="12" r="3" />
-                      </svg>
+              {!isEditando && (
+                <>
+                  <div className="form-control md:col-span-2">
+                    <label className="label">
+                      <span className="label-text">Contraseña *</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={mostrarContrasena ? 'text' : 'password'}
+                        placeholder="Mínimo 8 caracteres"
+                        className={`input input-bordered w-full pr-12 ${fieldErrors.contrasena ? 'input-error' : ''}`}
+                        value={formData.contrasena}
+                        onChange={(e) => {
+                          setFormData({ ...formData, contrasena: e.target.value });
+                          setFieldErrors({ ...fieldErrors, contrasena: '' });
+                        }}
+                        required
+                      />
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-xs absolute right-2 top-1/2 -translate-y-1/2"
+                        onClick={() => setMostrarContrasena((prev) => !prev)}
+                        aria-label={mostrarContrasena ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                      >
+                        {mostrarContrasena ? (
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M3 3l18 18M10.477 10.486A2.5 2.5 0 0112 9.5a2.5 2.5 0 012.5 2.5 2.5 2.5 0 01-.986 1.987m-2.614.454a2.5 2.5 0 001.1.059M4.5 4.5C3.158 5.806 2.03 7.346 1.17 9c2.12 4.24 6.12 7 10.83 7 1.425 0 2.79-.25 4.06-.71m2.82-1.77C20.93 12.83 22 11 22 11c-2.12-4.24-6.12-7-10.83-7-.977 0-1.93.1-2.848.29" />
+                          </svg>
+                        ) : (
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            <circle cx="12" cy="12" r="3" />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
+                    {fieldErrors.contrasena && (
+                      <p className="text-error text-xs mt-1">{fieldErrors.contrasena}</p>
                     )}
-                  </button>
-                </div>
-                <p className="text-xs text-base-content/70 mt-2">
-                  Requisitos: mínimo 8 caracteres, al menos una mayúscula, una minúscula, un número y un símbolo.
-                </p>
-              </div>
+                    {!fieldErrors.contrasena && (
+                      <p className="text-xs text-base-content/70 mt-1">
+                        Requisitos: mínimo 8 caracteres, al menos una mayúscula, una minúscula, un número y un símbolo.
+                      </p>
+                    )}
+                  </div>
 
-              <div className="form-control md:col-span-2">
-                <label className="label">
-                  <span className="label-text">Confirmar Contraseña {!isEditando && '*'}</span>
-                </label>
-                <div className="relative">
-                  <input
-                    type={mostrarConfirmar ? 'text' : 'password'}
-                    placeholder="Repite la contraseña"
-                    className="input input-bordered w-full pr-12"
-                    value={formData.confirmarContrasena}
-                    onChange={(e) => setFormData({ ...formData, confirmarContrasena: e.target.value })}
-                    required={!isEditando}
-                  />
-                  <button
-                    type="button"
-                    className="btn btn-ghost btn-xs absolute right-2 top-1/2 -translate-y-1/2"
-                    onClick={() => setMostrarConfirmar((prev) => !prev)}
-                    aria-label={mostrarConfirmar ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                  >
+                  <div className="form-control md:col-span-2">
+                    <label className="label">
+                      <span className="label-text">Confirmar Contraseña *</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={mostrarConfirmar ? 'text' : 'password'}
+                        placeholder="Repite la contraseña"
+                        className={`input input-bordered w-full pr-12 ${fieldErrors.confirmarContrasena ? 'input-error' : ''}`}
+                        value={formData.confirmarContrasena}
+                        onChange={(e) => {
+                          setFormData({ ...formData, confirmarContrasena: e.target.value });
+                          setFieldErrors({ ...fieldErrors, confirmarContrasena: '' });
+                        }}
+                        required
+                      />
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-xs absolute right-2 top-1/2 -translate-y-1/2"
+                        onClick={() => setMostrarConfirmar((prev) => !prev)}
+                        aria-label={mostrarConfirmar ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                      >
                     {mostrarConfirmar ? (
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M3 3l18 18M10.477 10.486A2.5 2.5 0 0112 9.5a2.5 2.5 0 012.5 2.5 2.5 2.5 0 01-.986 1.987m-2.614.454a2.5 2.5 0 001.1.059M4.5 4.5C3.158 5.806 2.03 7.346 1.17 9c2.12 4.24 6.12 7 10.83 7 1.425 0 2.79-.25 4.06-.71m2.82-1.77C20.93 12.83 22 11 22 11c-2.12-4.24-6.12-7-10.83-7-.977 0-1.93.1-2.848.29" />
@@ -508,16 +608,29 @@ const Usuarios: React.FC = () => {
                         <circle cx="12" cy="12" r="3" />
                       </svg>
                     )}
-                  </button>
-                </div>
-              </div>
+                      </button>
+                    </div>
+                    {fieldErrors.confirmarContrasena && (
+                      <p className="text-error text-xs mt-1">{fieldErrors.confirmarContrasena}</p>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
+
+            {fieldErrors.general && (
+              <div className="mt-4">
+                <p className="text-error text-sm">{fieldErrors.general}</p>
+              </div>
+            )}
 
             <div className="flex justify-end gap-2 mt-6">
               <button type="button" className="btn btn-ghost" onClick={() => {
                 setIsModalOpen(false);
                 setIsEditando(false);
                 setUsuarioEditandoId(null);
+                setModalError(null);
+                setFieldErrors({});
               }}>
                 Cancelar
               </button>
@@ -558,6 +671,110 @@ const Usuarios: React.FC = () => {
               </button>
               <button className="btn btn-error" onClick={handleConfirmToggle}>
                 {usuarios.find(u => u._id === confirmAction?.usuarioId)?.isActive ? 'Desactivar' : 'Activar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de resetear contraseña */}
+      {showResetPasswordModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-base-100 rounded-lg shadow-xl p-6 max-w-md mx-4 w-full">
+            <h3 className="text-lg font-bold mb-4">Resetear Contraseña</h3>
+            
+            <p className="text-base-content/70 mb-4">
+              Ingresa la nueva contraseña para {usuarios.find(u => u._id === resetPasswordData.usuarioId)?.nombreUsuario}
+            </p>
+            
+            <div className="form-control mb-4">
+              <label className="label">
+                <span className="label-text">Nueva Contraseña</span>
+              </label>
+              <div className="relative">
+                <input
+                  type={mostrarNuevaPassword ? 'text' : 'password'}
+                  placeholder="Mínimo 8 caracteres"
+                  className="input input-bordered w-full pr-12"
+                  value={resetPasswordData.newPassword}
+                  onChange={(e) => {
+                    setResetPasswordData({ ...resetPasswordData, newPassword: e.target.value });
+                    setResetPasswordError(null);
+                  }}
+                />
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-xs absolute right-2 top-1/2 -translate-y-1/2"
+                  onClick={() => setMostrarNuevaPassword(!mostrarNuevaPassword)}
+                  aria-label={mostrarNuevaPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                >
+                  {mostrarNuevaPassword ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                    </svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+              {resetPasswordError && resetPasswordData.newPassword.length < 8 && (
+                <p className="text-error text-xs mt-1">{resetPasswordError}</p>
+              )}
+            </div>
+            
+            <div className="form-control mb-4">
+              <label className="label">
+                <span className="label-text">Confirmar Contraseña</span>
+              </label>
+              <div className="relative">
+                <input
+                  type={mostrarConfirmarPassword ? 'text' : 'password'}
+                  placeholder="Repite la contraseña"
+                  className="input input-bordered w-full pr-12"
+                  value={resetPasswordData.confirmPassword}
+                  onChange={(e) => {
+                    setResetPasswordData({ ...resetPasswordData, confirmPassword: e.target.value });
+                    setResetPasswordError(null);
+                  }}
+                />
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-xs absolute right-2 top-1/2 -translate-y-1/2"
+                  onClick={() => setMostrarConfirmarPassword(!mostrarConfirmarPassword)}
+                  aria-label={mostrarConfirmarPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                >
+                  {mostrarConfirmarPassword ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                    </svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+              {resetPasswordError && resetPasswordData.newPassword !== resetPasswordData.confirmPassword && (
+                <p className="text-error text-xs mt-1">{resetPasswordError}</p>
+              )}
+            </div>
+            
+            <div className="flex justify-end gap-2">
+              <button className="btn btn-ghost" onClick={() => {
+                setShowResetPasswordModal(false);
+                setResetPasswordError(null);
+                setResetPasswordData({ usuarioId: '', newPassword: '', confirmPassword: '' });
+                setMostrarNuevaPassword(false);
+                setMostrarConfirmarPassword(false);
+              }}>
+                Cancelar
+              </button>
+              <button className="btn btn-primary" onClick={handleConfirmResetPassword}>
+                Resetear Contraseña
               </button>
             </div>
           </div>
