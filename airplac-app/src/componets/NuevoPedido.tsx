@@ -696,8 +696,17 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
       fetchPedidos();
       onPedidoCreado();
       onClose();
-    } catch (error) {
-      setErrorMessage("Hubo un error al procesar el pedido");
+    } catch (error: any) {
+      const backendMessage = error?.response?.data?.message;
+      const status = error?.response?.status;
+      // Mostrar mensaje específico de backend si existe
+      if (backendMessage) {
+        setErrorMessage(backendMessage);
+      } else if (status === 403) {
+        setErrorMessage("No tienes permiso para editar este pedido. Solo puedes editar tus propios pedidos que no están entregados.");
+      } else {
+        setErrorMessage("Hubo un error al procesar el pedido");
+      }
     } finally {
       setIsLoading(false);
     }

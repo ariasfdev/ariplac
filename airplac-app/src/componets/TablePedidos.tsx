@@ -340,8 +340,15 @@ const RowActions: React.FC<{
   onComentarioCliente,
   onComentarioProducto,
 }) => {
-  const { userRole } = useAuth()
+  const { userRole, userId } = useAuth()
   const isVendedor = userRole?.toLowerCase() === 'vendedor'
+  const ownedByUser = Boolean(userId && row?.usuarioId && row.usuarioId === userId)
+  const canEdit = ["retira", "enviar", "instalacion"].includes(row.estado) && row.disponible !== "entregado" && ownedByUser
+
+  // Si es vendedor y no puede editar este pedido, no mostrar el menú de acciones
+  if (isVendedor && !canEdit) {
+    return null
+  }
 
   return (
     <div className="dropdown dropdown-end">
@@ -385,8 +392,8 @@ const RowActions: React.FC<{
           </>
         )}
 
-        {/* Solo mostrar "Editar Pedido" si el pedido NO está entregado en la columna "Disponible" */}
-        {["retira", "enviar", "instalacion"].includes(row.estado) && row.disponible !== "entregado" && (
+        {/* Solo mostrar "Editar Pedido" si el pedido NO está entregado en la columna "Disponible" y si el vendedor es dueño */}
+        {["retira", "enviar", "instalacion"].includes(row.estado) && row.disponible !== "entregado" && (!isVendedor || (isVendedor && ownedByUser)) && (
           <>
             <li>
               <button onClick={() => onEditar(row)} className="flex items-center gap-2">
