@@ -4,6 +4,42 @@ import Modal from '../componets/Modal';
 import SuccessModal from '../componets/SuccessModal';
 import ErrorModal from '../componets/ErrorModal';
 
+interface PasswordRequirement {
+  label: string;
+  met: boolean;
+  regex: RegExp;
+}
+
+const getPasswordRequirements = (password: string): PasswordRequirement[] => {
+  return [
+    {
+      label: 'Mínimo 8 caracteres',
+      met: password.length >= 8,
+      regex: /.{8,}/,
+    },
+    {
+      label: 'Una mayúscula (A-Z)',
+      met: /[A-Z]/.test(password),
+      regex: /[A-Z]/,
+    },
+    {
+      label: 'Una minúscula (a-z)',
+      met: /[a-z]/.test(password),
+      regex: /[a-z]/,
+    },
+    {
+      label: 'Un número (0-9)',
+      met: /[0-9]/.test(password),
+      regex: /[0-9]/,
+    },
+    {
+      label: 'Un carácter especial (!@#$%^&*)',
+      met: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password),
+      regex: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/,
+    },
+  ];
+};
+
 const Usuarios: React.FC = () => {
   const DEFAULT_SUCURSAL_ID = '696bf44f76430ec803078081';
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
@@ -166,6 +202,9 @@ const Usuarios: React.FC = () => {
         }
         if (errorMsg.includes('mail')) {
           newFieldErrors.mail = 'Este correo electrónico ya está registrado';
+        }
+        if (errorMsg.includes('telefono')) {
+          newFieldErrors.telefono = 'Este número de teléfono ya está registrado';
         }
         
         setFieldErrors(newFieldErrors);
@@ -722,6 +761,33 @@ const Usuarios: React.FC = () => {
               </div>
               {resetPasswordError && resetPasswordData.newPassword.length < 8 && (
                 <p className="text-error text-xs mt-1">{resetPasswordError}</p>
+              )}
+              {!resetPasswordError && resetPasswordData.newPassword && (
+                <div className="text-xs mt-2 space-y-1">
+                  <p className="font-semibold text-base-content/80">Verificando requisitos:</p>
+                  {getPasswordRequirements(resetPasswordData.newPassword).map((req, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <span className={`${req.met ? 'text-success' : 'text-error'}`}>
+                        {req.met ? '✓' : '✗'}
+                      </span>
+                      <span className={req.met ? 'text-success' : 'text-error'}>
+                        {req.label}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {!resetPasswordError && !resetPasswordData.newPassword && (
+                <div className="text-xs text-base-content/70 mt-2 space-y-1">
+                  <p className="font-semibold">Requisitos:</p>
+                  <ul className="list-disc list-inside space-y-1 ml-2">
+                    <li>Mínimo 8 caracteres</li>
+                    <li>Una mayúscula (A-Z)</li>
+                    <li>Una minúscula (a-z)</li>
+                    <li>Un número (0-9)</li>
+                    <li>Un carácter especial (!@#$%^&*)</li>
+                  </ul>
+                </div>
               )}
             </div>
             

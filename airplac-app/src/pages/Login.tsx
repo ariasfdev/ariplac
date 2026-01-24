@@ -4,9 +4,46 @@ import { login, enviarCodigoRecuperacion, verificarCodigo, cambiarContrasena } f
 
 type LoginStep = 'login' | 'forgot-email' | 'verify-code' | 'reset-password';
 
+interface PasswordRequirement {
+  label: string;
+  met: boolean;
+  regex: RegExp;
+}
+
 const Login: React.FC = () => {
   const [step, setStep] = useState<LoginStep>('login');
   const navigate = useNavigate();
+
+  // Función para validar requisitos de contraseña
+  const getPasswordRequirements = (password: string): PasswordRequirement[] => {
+    return [
+      {
+        label: 'Mínimo 8 caracteres',
+        met: password.length >= 8,
+        regex: /.{8,}/,
+      },
+      {
+        label: 'Una mayúscula (A-Z)',
+        met: /[A-Z]/.test(password),
+        regex: /[A-Z]/,
+      },
+      {
+        label: 'Una minúscula (a-z)',
+        met: /[a-z]/.test(password),
+        regex: /[a-z]/,
+      },
+      {
+        label: 'Un número (0-9)',
+        met: /[0-9]/.test(password),
+        regex: /[0-9]/,
+      },
+      {
+        label: 'Un carácter especial (!@#$%^&*)',
+        met: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password),
+        regex: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/,
+      },
+    ];
+  };
 
   // Estados para login
   const [usuario, setUsuario] = useState('');
@@ -111,7 +148,17 @@ const Login: React.FC = () => {
       setUsuario('');
       setContrasena('');
     } catch (err: any) {
-      setError(err?.response?.data?.message ?? 'Error al cambiar contraseña');
+      console.error('Error en cambiar contraseña:', err);
+      let serverError = 'Error al cambiar contraseña';
+      
+      if (err?.response?.data?.message) {
+        serverError = err.response.data.message;
+      } else if (err?.message) {
+        serverError = err.message;
+      }
+      
+      console.log('Error a mostrar:', serverError);
+      setError(serverError);
     } finally {
       setLoading(false);
     }
@@ -332,6 +379,33 @@ const Login: React.FC = () => {
                   {fieldErrors.nuevaContrasena && (
                     <p className="text-error text-xs mt-1">{fieldErrors.nuevaContrasena}</p>
                   )}
+                  {!fieldErrors.nuevaContrasena && nuevaContrasena && (
+                    <div className="text-xs mt-2 space-y-1">
+                      <p className="font-semibold text-base-content/80">Verificando requisitos:</p>
+                      {getPasswordRequirements(nuevaContrasena).map((req, index) => (
+                        <div key={index} className="flex items-center gap-2">
+                          <span className={`${req.met ? 'text-success' : 'text-error'}`}>
+                            {req.met ? '✓' : '✗'}
+                          </span>
+                          <span className={req.met ? 'text-success' : 'text-error'}>
+                            {req.label}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {!fieldErrors.nuevaContrasena && !nuevaContrasena && (
+                    <div className="text-xs text-base-content/70 mt-2 space-y-1">
+                      <p className="font-semibold">Requisitos:</p>
+                      <ul className="list-disc list-inside space-y-1 ml-2">
+                        <li>Mínimo 8 caracteres</li>
+                        <li>Una mayúscula (A-Z)</li>
+                        <li>Una minúscula (a-z)</li>
+                        <li>Un número (0-9)</li>
+                        <li>Un carácter especial (!@#$%^&*)</li>
+                      </ul>
+                    </div>
+                  )}
                 </div>
                 <div className="form-control mb-4">
                   <label className="label">
@@ -372,8 +446,11 @@ const Login: React.FC = () => {
                   )}
                 </div>
                 {error && (
-                  <div className="mb-4">
-                    <p className="text-error text-sm">{error}</p>
+                  <div className="alert alert-error mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l-2-2m0 0l-2-2m2 2l2-2m-2 2l-2 2m2-2l2 2" />
+                    </svg>
+                    <span>{error}</span>
                   </div>
                 )}
                 <div className="form-control mt-6 gap-2">
