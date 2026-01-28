@@ -10,6 +10,7 @@ export interface Usuario {
   isActive: boolean;
   rolId?: string;
   rol?: string;
+  rolNombre?: string;
   lastLogin?: string;
 }
 

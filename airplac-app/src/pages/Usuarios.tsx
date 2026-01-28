@@ -345,6 +345,7 @@ const Usuarios: React.FC = () => {
               <thead>
                 <tr className="bg-base-200">
                   <th>Usuario</th>
+                  <th>Rol</th>
                   <th>Correo</th>
                   <th>Estado</th>
                   <th>Último Login</th>
@@ -355,6 +356,7 @@ const Usuarios: React.FC = () => {
                 {filteredUsuarios.map((usuario) => (
                   <tr key={usuario._id} className="hover:bg-base-200">
                     <td className="font-medium">{usuario.nombreUsuario}</td>
+                    <td>{usuario.rolNombre || '-'}</td>
                     <td>{usuario.mail}</td>
                     <td>
                       <span

@@ -15,13 +15,13 @@ const Nav: React.FC<NavProps> = ({ isNavVisible, setIsNavVisible }) => {
 
   const getVisibleItems = () => {
     if (userRole === 'Vendedor') {
-      return ['Pedidos', 'Importar Pedidos', 'Stock'];
+      return ['Pedidos', 'Stock'];
     }
     if (userRole === 'Admin') {
-      return ['Pedidos', 'Importar Pedidos', 'Stock', 'Modelos', 'Control Stock', 'Precios'];
+      return ['Pedidos',  'Stock', 'Modelos', 'Precios'];
     }
     if (userRole === 'Superadmin') {
-      return ['Pedidos', 'Importar Pedidos', 'Stock', 'Modelos', 'Control Stock', 'Precios', 'Usuarios'];
+      return ['Pedidos', 'Stock', 'Modelos', 'Precios', 'Usuarios'];
     }
     return [];
   };
