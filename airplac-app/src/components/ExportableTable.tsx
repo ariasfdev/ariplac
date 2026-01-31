@@ -28,6 +28,21 @@ const ExportableTable: React.FC<ExportableTableProps> = ({
   loading = false,
   error,
 }) => {
+  const formatSummaryLabel = (rawKey: string) => {
+    const withSpaces = rawKey
+      .replace(/_/g, ' ')
+      .replace(/([a-z])([A-Z])/g, '$1 $2')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (!withSpaces) return rawKey;
+
+    return withSpaces
+      .split(' ')
+      .map((word) => (word ? word[0].toUpperCase() + word.slice(1).toLowerCase() : ''))
+      .join(' ');
+  };
+
   const exportToExcel = () => {
     try {
       // Preparar datos para Excel
@@ -108,7 +123,7 @@ const ExportableTable: React.FC<ExportableTableProps> = ({
 
             return (
               <div key={key} className="summary-item">
-                <span className="summary-label">{key}:</span>
+                <span className="summary-label">{formatSummaryLabel(key)}:</span>
                 <span className="summary-value">{displayValue}</span>
               </div>
             );

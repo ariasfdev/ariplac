@@ -140,9 +140,9 @@ const Reportes: React.FC = () => {
       </div>
 
       <div className="tabs-container">
-        <button className={`tab-btn ${activeTab === 'fase1' ? 'active' : ''}`} onClick={() => setActiveTab('fase1')}>Fase 1: Principales</button>
-        <button className={`tab-btn ${activeTab === 'fase2' ? 'active' : ''}`} onClick={() => setActiveTab('fase2')}>Fase 2: Estratégicos</button>
-        <button className={`tab-btn ${activeTab === 'fase3' ? 'active' : ''}`} onClick={() => setActiveTab('fase3')}>Fase 3: Detallado</button>
+        <button className={`tab-btn ${activeTab === 'fase1' ? 'active' : ''}`} onClick={() => setActiveTab('fase1')}>Reportes Principales</button>
+        <button className={`tab-btn ${activeTab === 'fase2' ? 'active' : ''}`} onClick={() => setActiveTab('fase2')}>Reportes Estratégicos</button>
+        <button className={`tab-btn ${activeTab === 'fase3' ? 'active' : ''}`} onClick={() => setActiveTab('fase3')}>Reportes Detallado</button>
       </div>
 
       <div className="content-area">
@@ -179,7 +179,7 @@ const Reportes: React.FC = () => {
                   </div>
                   <button onClick={() => reloadTableData('ventasPorModelo')} className="btn-apply-filters" style={{ marginTop: '1.5rem' }}>Aplicar</button>
                 </div>
-                <ExportableTable title="Ventas por Modelo" description="Muestra las ventas totales, cantidad vendida e ingresos brutos por cada modelo" columns={[{ key: 'nombreModelo', label: 'Modelo' }, { key: 'cantidad_vendida', label: 'Cantidad', format: fmtNum }, { key: 'ingresos_brutos', label: 'Ingresos', format: fmtMoney }]} data={applyTableFilters(ventasPorModelo.data || [], 'ventasPorModelo')} summary={filterSummary(ventasPorModelo.resumen)} loading={loading} />
+                <ExportableTable title="Ventas por Modelo" description="Muestra las ventas totales, cantidad vendida e ingresos brutos por cada modelo" columns={[{ key: 'nombreModelo', label: 'Modelo' }, { key: 'cantidad_vendida', label: 'Cantidad vendida', format: fmtNum }, { key: 'ingresos_brutos', label: 'Ingresos', format: fmtMoney }]} data={applyTableFilters(ventasPorModelo.data || [], 'ventasPorModelo')} summary={filterSummary(ventasPorModelo.resumen)} loading={loading} />
               </div>
             )}
             
