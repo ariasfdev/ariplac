@@ -174,7 +174,7 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-base-200 flex items-center justify-center p-4">
+    <div className="login-page min-h-screen bg-base-200 flex items-center justify-center p-4">
       <div className="card w-full max-w-md bg-base-100 shadow-xl">
         <div className="card-body">
           {/* Pantalla de Login */}

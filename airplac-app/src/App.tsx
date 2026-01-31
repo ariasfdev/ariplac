@@ -5,6 +5,8 @@ import {
   Route,
   Navigate,
 } from "react-router-dom";
+import "./App.css";
+import "./styles/Layout.css";
 import { AppProvider } from "./context/AppContext";
 import { PrivateRoute } from "./components/PrivateRoute";
 import Login from "./pages/Login";
@@ -17,6 +19,7 @@ import Modelos from "./pages/Modelos";
 import Trazabilidad from "./pages/trazabilidad";
 import Precios from "./pages/Precios";
 import Usuarios from "./pages/Usuarios";
+import Reportes from "./pages/Reportes";
 import { useAuth } from "./context/AuthContext";
 
 // Componente para proteger rutas por rol
@@ -95,6 +98,14 @@ const App: React.FC = () => {
               element={
                 <RoleProtectedRoute allowedRoles={["Superadmin"]}>
                   <Usuarios />
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
+              path="reportes"
+              element={
+                <RoleProtectedRoute allowedRoles={["Admin", "Superadmin"]}>
+                  <Reportes />
                 </RoleProtectedRoute>
               }
             />

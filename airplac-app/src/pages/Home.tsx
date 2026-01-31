@@ -1,11 +1,8 @@
 import React from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import Nav from "../componets/Nav";
-import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
-import { useAppContext } from "../context/AppContext";
 
 const Home: React.FC = () => {
-  const { isNavVisible, setIsNavVisible } = useAppContext();
   const location = useLocation();
 
   const getTitle = () => {
@@ -22,32 +19,28 @@ const Home: React.FC = () => {
         return "Gestión de Trazabilidad";
       case "/home/precios":
         return "Gestión de Precios";
+      case "/home/reportes":
+        return "Reportes";
+      case "/home/usuarios":
+        return "Gestión de Usuarios";
       default:
         return "Inicio";
     }
   };
 
   return (
-    <div className="flex flex-col md:flex-row min-h-screen">
-      <Nav isNavVisible={isNavVisible} setIsNavVisible={setIsNavVisible} />
+    <div className="layout-container">
+      <div className="sidebar">
+        <Nav isNavVisible={true} setIsNavVisible={() => {}} />
+      </div>
 
-      <button
-        onClick={() => setIsNavVisible(!isNavVisible)}
-        className={`btn btn-circle btn-secondary text-xl fixed top-4 ${
-          isNavVisible ? "left-64" : "left-4"
-        } z-40 transition-all duration-500`}
-      >
-        {isNavVisible ? <FaChevronLeft /> : <FaChevronRight />}
-      </button>
-
-      <main className="flex-1 p-4 sm:p-6 md:p-8">
-        <div className="flex items-center justify-center mb-4">
-          {" "}
-          {/* Cambiado a justify-center */}
-          <h2 className="text-2xl font-bold text-center">{getTitle()}</h2>{" "}
-          {/* Alineación centrada */}
+      <main className="main-content">
+        <div style={{ padding: '1.5rem', borderBottom: '1px solid #e5e7eb' }}>
+          <h2 className="text-2xl font-bold">{getTitle()}</h2>
         </div>
-        <Outlet />
+        <div style={{ padding: '1.5rem' }}>
+          <Outlet />
+        </div>
       </main>
     </div>
   );

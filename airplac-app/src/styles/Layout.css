@@ -1,0 +1,92 @@
+/* Layout de sidebar fijo */
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+#root {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.layout-container {
+  display: flex;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 300px;
+  height: 100vh;
+  background: white;
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.main-content {
+  margin-left: 300px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow-y: auto;
+  background: #f8f9fa;
+}
+
+/* Estilos para Nav dentro del sidebar */
+.sidebar aside {
+  position: static !important;
+  width: 100% !important;
+  height: auto !important;
+  transform: none !important;
+  z-index: auto !important;
+  border: none !important;
+  background: white !important;
+  box-shadow: none !important;
+  opacity: 1 !important;
+}
+
+.sidebar aside.translate-x-0 {
+  transform: none !important;
+}
+
+.sidebar aside.-translate-x-full {
+  transform: none !important;
+}
+
+.sidebar aside.w-0 {
+  width: 100% !important;
+}
+
+.sidebar aside.w-80 {
+  width: 100% !important;
+}
+
+/* Ocultar toggle de nav */
+.sidebar aside .md\:relative {
+  position: relative !important;
+}
+
+/* Ajustar ancho del contenido del nav */
+.sidebar [className*="transition"] {
+  transition: none !important;
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    width: 250px;
+  }
+
+  .main-content {
+    margin-left: 250px;
+  }
+}
