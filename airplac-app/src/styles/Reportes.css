@@ -1,3 +1,153 @@
+/* Página índice de reportes */
+.reportes-index {
+  padding: 2rem 0;
+}
+
+.fase-group {
+  margin-bottom: 3rem;
+}
+
+.fase-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #0066cc;
+}
+
+.reportes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.reporte-card {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+}
+
+.reporte-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 16px rgba(0, 102, 204, 0.2);
+  border-color: #0066cc;
+}
+
+.reporte-icon {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+.reporte-card h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 0.5rem;
+}
+
+.reporte-card p {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 1rem;
+  line-height: 1.4;
+}
+
+.btn-view {
+  background: #0066cc;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  width: 100%;
+}
+
+.btn-view:hover {
+  background: #0052a3;
+}
+
+.btn-back {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  white-space: nowrap;
+  order: -1;
+}
+
+.btn-back:hover {
+  background: #5a6268;
+}
+
+/* Paginación */
+.pagination-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+  padding: 1rem;
+  flex-wrap: wrap;
+}
+
+.pagination-info {
+  font-size: 0.9rem;
+  color: #666;
+  margin-right: 1rem;
+}
+
+.pagination-btn {
+  background: #0066cc;
+  color: white;
+  border: none;
+  padding: 0.5rem 0.8rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: #0052a3;
+}
+
+.pagination-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.page-number {
+  background: white;
+  border: 1px solid #ddd;
+  padding: 0.5rem 0.8rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.page-number.active {
+  background: #0066cc;
+  color: white;
+  border-color: #0066cc;
+}
+
+.page-number:hover {
+  border-color: #0066cc;
+}
+
+/* Estilos existentes... */
 .reportes-page {
   padding: 0;
   max-width: none;
@@ -10,12 +160,14 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 1rem;
   margin-bottom: 0;
   background: transparent;
   padding: 0;
   border-radius: 0;
   box-shadow: none;
   border: none;
+  flex-wrap: wrap;
 }
 
 .reportes-toolbar h1 {
@@ -23,6 +175,8 @@
   font-size: 1.2rem;
   color: #1a1a1a;
   font-weight: 600;
+  flex: 1;
+  min-width: 200px;
 }
 
 .filters-container {
@@ -61,6 +215,7 @@
 
 .table-with-filters {
   margin-bottom: 2rem;
+  margin-top: 3rem;
 }
 
 .table-date-filters {

@@ -1,9 +1,10 @@
-import React from "react";
+import React, { useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import Nav from "../componets/Nav";
 
 const Home: React.FC = () => {
   const location = useLocation();
+  const [isNavVisible, setIsNavVisible] = useState(true);
 
   const getTitle = () => {
     switch (location.pathname) {
@@ -30,11 +31,11 @@ const Home: React.FC = () => {
 
   return (
     <div className="layout-container">
-      <div className="sidebar">
-        <Nav isNavVisible={true} setIsNavVisible={() => {}} />
+      <div className={`sidebar ${isNavVisible ? '' : 'collapsed'}`}>
+        <Nav isNavVisible={isNavVisible} setIsNavVisible={setIsNavVisible} />
       </div>
 
-      <main className="main-content">
+      <main className={`main-content ${isNavVisible ? '' : 'expanded'}`}>
         <div style={{ padding: '1.5rem', borderBottom: '1px solid #e5e7eb' }}>
           <h2 className="text-2xl font-bold">{getTitle()}</h2>
         </div>

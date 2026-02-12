@@ -20,6 +20,7 @@ import Trazabilidad from "./pages/trazabilidad";
 import Precios from "./pages/Precios";
 import Usuarios from "./pages/Usuarios";
 import Reportes from "./pages/Reportes";
+import ReporteIndividual from "./pages/reportes/ReporteIndividual";
 import { useAuth } from "./context/AuthContext";
 
 // Componente para proteger rutas por rol
@@ -106,6 +107,62 @@ const App: React.FC = () => {
               element={
                 <RoleProtectedRoute allowedRoles={["Admin", "Superadmin"]}>
                   <Reportes />
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
+              path="reportes/ventas-modelo"
+              element={
+                <RoleProtectedRoute allowedRoles={["Admin", "Superadmin"]}>
+                  <ReporteIndividual tipo="ventasModelo" />
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
+              path="reportes/ventas-vendedor"
+              element={
+                <RoleProtectedRoute allowedRoles={["Admin", "Superadmin"]}>
+                  <ReporteIndividual tipo="ventasVendedor" />
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
+              path="reportes/top-clientes"
+              element={
+                <RoleProtectedRoute allowedRoles={["Admin", "Superadmin"]}>
+                  <ReporteIndividual tipo="topClientes" />
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
+              path="reportes/rentabilidad-modelo"
+              element={
+                <RoleProtectedRoute allowedRoles={["Admin", "Superadmin"]}>
+                  <ReporteIndividual tipo="rentabilidadModelo" />
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
+              path="reportes/tasa-conversion"
+              element={
+                <RoleProtectedRoute allowedRoles={["Admin", "Superadmin"]}>
+                  <ReporteIndividual tipo="tasaConversion" />
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
+              path="reportes/rentabilidad-pedido"
+              element={
+                <RoleProtectedRoute allowedRoles={["Admin", "Superadmin"]}>
+                  <ReporteIndividual tipo="rentabilidadPedido" />
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
+              path="reportes/estado-pedidos"
+              element={
+                <RoleProtectedRoute allowedRoles={["Admin", "Superadmin"]}>
+                  <ReporteIndividual tipo="estadoPedidos" />
                 </RoleProtectedRoute>
               }
             />

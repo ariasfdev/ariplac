@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import * as XLSX from 'xlsx';
 import '../styles/ExportableTable.css';
 
@@ -17,6 +17,7 @@ interface ExportableTableProps {
   summary?: Record<string, any>;
   loading?: boolean;
   error?: string;
+  rowsPerPage?: number;
 }
 
 const ExportableTable: React.FC<ExportableTableProps> = ({
@@ -27,7 +28,9 @@ const ExportableTable: React.FC<ExportableTableProps> = ({
   summary,
   loading = false,
   error,
+  rowsPerPage = 10,
 }) => {
+  const [currentPage, setCurrentPage] = useState(1);
   const formatSummaryLabel = (rawKey: string) => {
     const withSpaces = rawKey
       .replace(/_/g, ' ')
@@ -142,34 +145,41 @@ const ExportableTable: React.FC<ExportableTableProps> = ({
           </thead>
           <tbody>
             {data.length > 0 ? (
-              data.map((row, idx) => (
-                <tr key={idx}>
-                  {columns.map((col) => {
-                    const value = row[col.key];
-                    let displayValue = '-';
-                    
-                    try {
-                      if (value === null || value === undefined) {
+              (() => {
+                const totalPages = Math.ceil(data.length / rowsPerPage);
+                const startIndex = (currentPage - 1) * rowsPerPage;
+                const endIndex = startIndex + rowsPerPage;
+                const paginatedData = data.slice(startIndex, endIndex);
+
+                return paginatedData.map((row, idx) => (
+                  <tr key={idx}>
+                    {columns.map((col) => {
+                      const value = row[col.key];
+                      let displayValue = '-';
+                      
+                      try {
+                        if (value === null || value === undefined) {
+                          displayValue = '-';
+                        } else if (col.format) {
+                          displayValue = col.format(value);
+                        } else if (typeof value === 'object') {
+                          displayValue = JSON.stringify(value);
+                        } else {
+                          displayValue = String(value);
+                        }
+                      } catch (e) {
                         displayValue = '-';
-                      } else if (col.format) {
-                        displayValue = col.format(value);
-                      } else if (typeof value === 'object') {
-                        displayValue = JSON.stringify(value);
-                      } else {
-                        displayValue = String(value);
                       }
-                    } catch (e) {
-                      displayValue = '-';
-                    }
-                    
-                    return (
-                      <td key={col.key} align={typeof value === 'number' ? 'right' : 'left'}>
-                        {displayValue}
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))
+                      
+                      return (
+                        <td key={col.key} align={typeof value === 'number' ? 'right' : 'left'}>
+                          {displayValue}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ));
+              })()
             ) : (
               <tr>
                 <td colSpan={columns.length} style={{ textAlign: 'center', padding: '20px' }}>
@@ -180,6 +190,83 @@ const ExportableTable: React.FC<ExportableTableProps> = ({
           </tbody>
         </table>
       </div>
+
+      {data.length > 0 && (
+        <div className="pagination-container">
+          <span className="pagination-info">
+            {(() => {
+              const totalPages = Math.ceil(data.length / rowsPerPage);
+              const startIndex = (currentPage - 1) * rowsPerPage + 1;
+              const endIndex = Math.min(currentPage * rowsPerPage, data.length);
+              return `Mostrando ${startIndex}-${endIndex} de ${data.length}`;
+            })()}
+          </span>
+
+          <button
+            className="pagination-btn"
+            onClick={() => setCurrentPage(1)}
+            disabled={currentPage === 1}
+          >
+            ⟨⟨ Primera
+          </button>
+
+          <button
+            className="pagination-btn"
+            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+          >
+            ⟨ Anterior
+          </button>
+
+          {(() => {
+            const totalPages = Math.ceil(data.length / rowsPerPage);
+            const pages = [];
+            const maxVisible = 5;
+            
+            let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+            let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+            
+            if (endPage - startPage + 1 < maxVisible) {
+              startPage = Math.max(1, endPage - maxVisible + 1);
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+              pages.push(
+                <button
+                  key={i}
+                  className={`page-number ${currentPage === i ? 'active' : ''}`}
+                  onClick={() => setCurrentPage(i)}
+                >
+                  {i}
+                </button>
+              );
+            }
+            return pages;
+          })()}
+
+          <button
+            className="pagination-btn"
+            onClick={() => {
+              const totalPages = Math.ceil(data.length / rowsPerPage);
+              setCurrentPage(prev => Math.min(prev + 1, totalPages));
+            }}
+            disabled={currentPage === Math.ceil(data.length / rowsPerPage)}
+          >
+            Siguiente ⟩
+          </button>
+
+          <button
+            className="pagination-btn"
+            onClick={() => {
+              const totalPages = Math.ceil(data.length / rowsPerPage);
+              setCurrentPage(totalPages);
+            }}
+            disabled={currentPage === Math.ceil(data.length / rowsPerPage)}
+          >
+            Última ⟩⟩
+          </button>
+        </div>
+      )}
     </div>
   );
 };

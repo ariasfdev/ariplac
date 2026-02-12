@@ -92,11 +92,13 @@ export const reportesService = {
     return response.json();
   },
 
-  async getVentasPorModelo(desde?: string, hasta?: string): Promise<VentasPorModelo> {
+  async getVentasPorModelo(desde?: string, hasta?: string, idModelo?: string, tipo_producto?: string): Promise<VentasPorModelo> {
     let url = `${API_URL}/ventas-por-modelo`;
     const params = new URLSearchParams();
     if (desde) params.append('desde', desde);
     if (hasta) params.append('hasta', hasta);
+    if (idModelo) params.append('idModelo', idModelo);
+    if (tipo_producto) params.append('tipo_producto', tipo_producto);
     if (params.toString()) url += `?${params.toString()}`;
     
     const response = await fetch(url, {
@@ -106,11 +108,13 @@ export const reportesService = {
     return response.json();
   },
 
-  async getVentasPorVendedor(desde?: string, hasta?: string): Promise<VentasPorVendedor> {
+  async getVentasPorVendedor(desde?: string, hasta?: string, idModelo?: string, tipo_producto?: string): Promise<VentasPorVendedor> {
     let url = `${API_URL}/ventas-por-vendedor`;
     const params = new URLSearchParams();
     if (desde) params.append('desde', desde);
     if (hasta) params.append('hasta', hasta);
+    if (idModelo) params.append('idModelo', idModelo);
+    if (tipo_producto) params.append('tipo_producto', tipo_producto);
     if (params.toString()) url += `?${params.toString()}`;
     
     const response = await fetch(url, {
@@ -140,14 +144,14 @@ export const reportesService = {
     return response.json();
   },
 
-  async getRentabilidadModelo(desde?: string, hasta?: string): Promise<RentabilidadModelo> {
+  async getRentabilidadModelo(desde?: string, hasta?: string, idModelo?: string, tipo_producto?: string): Promise<RentabilidadModelo> {
     let url = `${API_URL}/rentabilidad-modelo`;
-    if (desde || hasta) {
-      const params = new URLSearchParams();
-      if (desde) params.append('desde', desde);
-      if (hasta) params.append('hasta', hasta);
-      url += `?${params.toString()}`;
-    }
+    const params = new URLSearchParams();
+    if (desde) params.append('desde', desde);
+    if (hasta) params.append('hasta', hasta);
+    if (idModelo) params.append('idModelo', idModelo);
+    if (tipo_producto) params.append('tipo_producto', tipo_producto);
+    if (params.toString()) url += `?${params.toString()}`;
     
     const response = await fetch(url, {
       headers: { Authorization: `Bearer ${localStorage.getItem('access_token')}` },
@@ -184,10 +188,12 @@ export const reportesService = {
     return response.json();
   },
 
-  async getEstadoPedidos(limite: number = 20, desde?: string, hasta?: string): Promise<EstadoPedidos> {
+  async getEstadoPedidos(limite: number = 20, desde?: string, hasta?: string, idModelo?: string, tipo_producto?: string): Promise<EstadoPedidos> {
     let url = `${API_URL}/estado-pedidos?limite=${limite}`;
     if (desde) url += `&desde=${desde}`;
     if (hasta) url += `&hasta=${hasta}`;
+    if (idModelo) url += `&idModelo=${idModelo}`;
+    if (tipo_producto) url += `&tipo_producto=${tipo_producto}`;
     
     const response = await fetch(url, {
       headers: { Authorization: `Bearer ${localStorage.getItem('access_token')}` },
@@ -209,6 +215,14 @@ export const reportesService = {
       headers: { Authorization: `Bearer ${localStorage.getItem('access_token')}` },
     });
     if (!response.ok) throw new Error('Error fetching metodos pago procedencia');
+    return response.json();
+  },
+
+  async getModelosDisponibles(): Promise<{ modelos: Array<{_id: string, nombre: string, tipo: string, unidad: string}>, tipos: string[] }> {
+    const response = await fetch(`${API_URL}/modelos-disponibles`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('access_token')}` },
+    });
+    if (!response.ok) throw new Error('Error fetching modelos disponibles');
     return response.json();
   },
 };

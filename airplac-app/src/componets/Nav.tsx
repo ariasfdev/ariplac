@@ -129,17 +129,42 @@ const Nav: React.FC<NavProps> = ({ isNavVisible, setIsNavVisible }) => {
 
   return (
     <aside
-      className={`bg-gradient-to-b from-base-100 to-base-200 shadow-xl transition-all duration-500 ease-in-out transform ${
-        isNavVisible ? "translate-x-0 w-80 z-50" : "-translate-x-full w-0 z-0"
-      } fixed md:relative h-screen md:z-0 border-r border-base-300`}
+      className={`bg-gradient-to-b from-base-100 to-base-200 shadow-xl transition-all duration-300 ease-in-out ${
+        isNavVisible ? "w-80" : "w-20"
+      } h-screen border-r border-base-300 overflow-hidden relative`}
     >
       {/* Header con logo y título */}
       <div
-        className={`bg-gradient-to-r from-primary to-primary-focus px-6 py-6 transition-opacity duration-500 ${
-          isNavVisible ? "opacity-100" : "opacity-0 hidden"
+        className={`bg-gradient-to-r from-primary to-primary-focus px-6 py-6 transition-all duration-300 relative ${
+          isNavVisible ? "opacity-100" : "opacity-100 px-2"
         }`}
       >
-        <div className="flex items-center gap-3">
+        {/* Botón toggle dentro del header */}
+        <button
+          onClick={() => setIsNavVisible(!isNavVisible)}
+          className="absolute top-1/2 right-4 transform -translate-y-1/2 z-50 bg-pink-100 hover:bg-pink-200 text-primary rounded-full p-3 transition-all duration-200 shadow-lg"
+          title={isNavVisible ? "Colapsar sidebar" : "Expandir sidebar"}
+        >
+          <svg 
+            width="24" 
+            height="24" 
+            viewBox="0 0 24 24" 
+            fill="none" 
+            stroke="currentColor" 
+            strokeWidth="2.5" 
+            strokeLinecap="round" 
+            strokeLinejoin="round"
+            style={{ transition: 'transform 0.3s' }}
+          >
+            {isNavVisible ? (
+              <path d="M15 18l-6-6 6-6" />
+            ) : (
+              <path d="M9 18l6-6-6-6" />
+            )}
+          </svg>
+        </button>
+
+        <div className={`flex items-center ${isNavVisible ? 'gap-3' : 'justify-center'}`}>
           <div className="avatar placeholder">
             <div className="bg-primary-content text-primary rounded-full w-12 h-12 flex items-center justify-center">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -147,23 +172,27 @@ const Nav: React.FC<NavProps> = ({ isNavVisible, setIsNavVisible }) => {
               </svg>
             </div>
           </div>
-          <div>
-            <h1 className="text-xl font-bold text-primary-content">Gestión de Negocio</h1>
-            <p className="text-primary-content/80 text-sm">Sistema de administración</p>
-          </div>
+          {isNavVisible && (
+            <div>
+              <h1 className="text-xl font-bold text-primary-content">Gestión de Negocio</h1>
+              <p className="text-primary-content/80 text-sm">Sistema de administración</p>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Navegación */}
       <nav
         className={`flex flex-col gap-2 p-6 ${
-          isNavVisible ? "opacity-100" : "opacity-0 pointer-events-none"
-        } transition-opacity duration-500`}
+          isNavVisible ? "" : "p-2"
+        } transition-all duration-300`}
       >
         <div className="mb-6">
-          <h3 className="text-xs font-semibold text-base-content/60 uppercase tracking-wider mb-4 px-2">
-            Navegación Principal
-          </h3>
+          {isNavVisible && (
+            <h3 className="text-xs font-semibold text-base-content/60 uppercase tracking-wider mb-4 px-2">
+              Navegación Principal
+            </h3>
+          )}
 
           <div className="space-y-2">
             {navItems.filter((item) => visibleItems.includes(item.label)).map((item) => {
@@ -175,13 +204,14 @@ const Nav: React.FC<NavProps> = ({ isNavVisible, setIsNavVisible }) => {
                   key={item.path}
                   to={item.path}
                   onClick={handleLinkClick}
-                  className={`group relative flex items-center gap-4 px-4 py-3 rounded-lg transition-all duration-200 ${
+                  title={!isNavVisible ? item.label : undefined}
+                  className={`group relative flex items-center ${isNavVisible ? 'gap-4 px-4' : 'justify-center px-2'} py-3 rounded-lg transition-all duration-200 ${
                     isActive || isActiveParent
                       ? "bg-primary text-primary-content shadow-lg"
                       : "text-base-content hover:bg-base-200 hover:text-primary"
                   }`}
                 >
-                  {(isActive || isActiveParent) && (
+                  {isNavVisible && (isActive || isActiveParent) && (
                     <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-8 bg-primary-content rounded-r-full"></div>
                   )}
 
@@ -195,34 +225,38 @@ const Nav: React.FC<NavProps> = ({ isNavVisible, setIsNavVisible }) => {
                     {item.icon}
                   </div>
 
-                  <div className="flex-1 min-w-0">
-                    <div
-                      className={`font-medium transition-colors duration-200 ${
-                        isActive || isActiveParent
-                          ? "text-primary-content"
-                          : "text-base-content group-hover:text-primary"
-                      }`}
-                    >
-                      {item.label}
-                    </div>
-                    <div
-                      className={`text-xs transition-colors duration-200 ${
-                        isActive || isActiveParent
-                          ? "text-primary-content/80"
-                          : "text-base-content/50 group-hover:text-primary/70"
-                      }`}
-                    >
-                      {item.description}
-                    </div>
-                  </div>
+                  {isNavVisible && (
+                    <>
+                      <div className="flex-1 min-w-0">
+                        <div
+                          className={`font-medium transition-colors duration-200 ${
+                            isActive || isActiveParent
+                              ? "text-primary-content"
+                              : "text-base-content group-hover:text-primary"
+                          }`}
+                        >
+                          {item.label}
+                        </div>
+                        <div
+                          className={`text-xs transition-colors duration-200 ${
+                            isActive || isActiveParent
+                              ? "text-primary-content/80"
+                              : "text-base-content/50 group-hover:text-primary/70"
+                          }`}
+                        >
+                          {item.description}
+                        </div>
+                      </div>
 
-                  <div
-                    className={`w-2 h-2 rounded-full transition-all duration-200 ${
-                      isActive || isActiveParent
-                        ? "bg-primary-content"
-                        : "bg-transparent group-hover:bg-primary/30"
-                    }`}
-                  ></div>
+                      <div
+                        className={`w-2 h-2 rounded-full transition-all duration-200 ${
+                          isActive || isActiveParent
+                            ? "bg-primary-content"
+                            : "bg-transparent group-hover:bg-primary/30"
+                        }`}
+                      ></div>
+                    </>
+                  )}
                 </Link>
               );
             })}
@@ -230,24 +264,27 @@ const Nav: React.FC<NavProps> = ({ isNavVisible, setIsNavVisible }) => {
         </div>
 
         <div className="mt-auto pt-6 border-t border-base-300">
-          <div className="bg-base-200 rounded-lg p-4 mb-4">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-2 h-2 bg-success rounded-full animate-pulse"></div>
-              <span className="text-sm font-medium text-base-content">Sistema Activo</span>
+          {isNavVisible && (
+            <div className="bg-base-200 rounded-lg p-4 mb-4">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-2 h-2 bg-success rounded-full animate-pulse"></div>
+                <span className="text-sm font-medium text-base-content">Sistema Activo</span>
+              </div>
+              <div className="text-xs text-base-content/60">
+                Última actualización: {new Date().toLocaleDateString("es-AR")}
+              </div>
             </div>
-            <div className="text-xs text-base-content/60">
-              Última actualización: {new Date().toLocaleDateString("es-AR")}
-            </div>
-          </div>
+          )}
 
           <button
             onClick={handleLogout}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-error/10 hover:bg-error/20 text-error rounded-lg transition-colors duration-200 font-medium"
+            title={!isNavVisible ? "Cerrar Sesión" : undefined}
+            className={`w-full flex items-center ${isNavVisible ? 'justify-center gap-2 px-4' : 'justify-center'} py-3 bg-error/10 hover:bg-error/20 text-error rounded-lg transition-colors duration-200 font-medium`}
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
             </svg>
-            Cerrar Sesión
+            {isNavVisible && "Cerrar Sesión"}
           </button>
         </div>
       </nav>
