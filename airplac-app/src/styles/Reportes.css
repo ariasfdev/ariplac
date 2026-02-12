@@ -30,6 +30,9 @@
   cursor: pointer;
   transition: all 0.2s ease;
   border: 2px solid transparent;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .reporte-card:hover {
@@ -55,6 +58,7 @@
   color: #666;
   margin-bottom: 1rem;
   line-height: 1.4;
+  flex-grow: 1;
 }
 
 .btn-view {
@@ -67,6 +71,7 @@
   cursor: pointer;
   transition: background 0.2s ease;
   width: 100%;
+  margin-top: auto;
 }
 
 .btn-view:hover {
@@ -211,6 +216,24 @@
   border-radius: 6px;
   font-size: 0.95rem;
   transition: all 0.3s ease;
+  height: 44px;
+}
+
+.filter-group select {
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+  height: 44px;
+  background: white;
+  cursor: pointer;
+}
+
+.filter-group select:focus {
+  outline: none;
+  border-color: #0066cc;
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
 }
 
 .table-with-filters {
