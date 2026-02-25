@@ -117,8 +117,9 @@ const ReporteIndividual: React.FC<ReporteIndividualProps> = ({ tipo }) => {
           columns: [
             { key: 'nombreModelo', label: 'Modelo' },
             { key: 'producto', label: 'Tipo' },
-            { key: 'unidad', label: 'Unidad' },
-            { key: 'cantidad_vendida', label: 'Cantidad vendida', format: fmtNum },
+            { key: 'unidad', label: 'Unidad medida' },
+            { key: 'cantidad_vendida', label: 'Cantidad vendida (m²)', format: fmtNum },
+            { key: 'cantidad_pedidos', label: 'Cantidad pedidos', format: fmtNum },
             { key: 'ingresos_brutos', label: 'Ingresos', format: fmtMoney }
           ],
           data: data?.data || [],
@@ -159,7 +160,7 @@ const ReporteIndividual: React.FC<ReporteIndividualProps> = ({ tipo }) => {
             { key: 'nombreModelo', label: 'Modelo' },
             { key: 'producto', label: 'Tipo' },
             { key: 'unidad', label: 'Unidad' },
-            { key: 'cantidad', label: 'Unidades', format: fmtNum },
+            { key: 'cantidad', label: 'Unidades(m²)', format: fmtNum },
             { key: 'costo_total', label: 'Costo', format: fmtMoney },
             { key: 'ingresos_brutos', label: 'Ingresos', format: fmtMoney },
             { key: 'ganancia_bruta', label: 'Ganancia', format: fmtMoney },
@@ -262,7 +263,9 @@ const ReporteIndividual: React.FC<ReporteIndividualProps> = ({ tipo }) => {
                     <select value={selectedModelo} onChange={(e) => setSelectedModelo(e.target.value)}>
                       <option value="">Todos los modelos</option>
                       {modelosFiltrados.map(m => (
-                        <option key={m._id} value={m._id}>{m.nombre}</option>
+                        <option key={m._id} value={m._id}>
+                          {m.nombre}{m.activo ? '' : ' (DADO DE BAJA)'}
+                        </option>
                       ))}
                     </select>
                   </div>
