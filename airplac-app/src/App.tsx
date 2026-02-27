@@ -166,6 +166,14 @@ const App: React.FC = () => {
                 </RoleProtectedRoute>
               }
             />
+            <Route
+              path="reportes/ventas-procedencia"
+              element={
+                <RoleProtectedRoute allowedRoles={["Admin", "Superadmin"]}>
+                  <ReporteIndividual tipo="ventasProcedencia" />
+                </RoleProtectedRoute>
+              }
+            />
           </Route>
         </Routes>
       </Router>

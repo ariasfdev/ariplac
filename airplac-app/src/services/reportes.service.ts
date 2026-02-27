@@ -83,6 +83,11 @@ export interface MetodosPagoProcedenecia {
   periodo: any;
 }
 
+export interface VentasPorProcedencia {
+  resumen: any;
+  data: any[];
+}
+
 export const reportesService = {
   async getDashboard(): Promise<DashboardData> {
     const response = await fetch(`${API_URL}/dashboard`, {
@@ -188,12 +193,13 @@ export const reportesService = {
     return response.json();
   },
 
-  async getEstadoPedidos(limite: number = 20, desde?: string, hasta?: string, idModelo?: string, tipo_producto?: string): Promise<EstadoPedidos> {
+  async getEstadoPedidos(limite: number = 20, desde?: string, hasta?: string, idModelo?: string, tipo_producto?: string, estado?: string): Promise<EstadoPedidos> {
     let url = `${API_URL}/estado-pedidos?limite=${limite}`;
     if (desde) url += `&desde=${desde}`;
     if (hasta) url += `&hasta=${hasta}`;
     if (idModelo) url += `&idModelo=${idModelo}`;
     if (tipo_producto) url += `&tipo_producto=${tipo_producto}`;
+    if (estado) url += `&estado=${estado}`;
     
     const response = await fetch(url, {
       headers: { Authorization: `Bearer ${localStorage.getItem('access_token')}` },
@@ -223,6 +229,33 @@ export const reportesService = {
       headers: { Authorization: `Bearer ${localStorage.getItem('access_token')}` },
     });
     if (!response.ok) throw new Error('Error fetching modelos disponibles');
+    return response.json();
+  },
+
+  async getVentasPorProcedencia(
+    desde?: string,
+    hasta?: string,
+    idModelo?: string,
+    tipo_producto?: string,
+    estado?: string,
+    disponible?: string,
+    tipo_documento?: string
+  ): Promise<VentasPorProcedencia> {
+    let url = `${API_URL}/ventas-por-procedencia`;
+    const params = new URLSearchParams();
+    if (desde) params.append('desde', desde);
+    if (hasta) params.append('hasta', hasta);
+    if (idModelo) params.append('idModelo', idModelo);
+    if (tipo_producto) params.append('tipo_producto', tipo_producto);
+    if (estado) params.append('estado', estado);
+    if (disponible) params.append('disponible', disponible);
+    if (tipo_documento) params.append('tipo_documento', tipo_documento);
+    if (params.toString()) url += `?${params.toString()}`;
+
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('access_token')}` },
+    });
+    if (!response.ok) throw new Error('Error fetching ventas por procedencia');
     return response.json();
   },
 };

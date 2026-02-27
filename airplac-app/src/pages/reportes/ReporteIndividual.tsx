@@ -5,7 +5,7 @@ import { reportesService } from '../../services/reportes.service';
 import '../../styles/Reportes.css';
 
 interface ReporteIndividualProps {
-  tipo: 'ventasModelo' | 'ventasVendedor' | 'topClientes' | 'rentabilidadModelo' | 'tasaConversion' | 'rentabilidadPedido' | 'estadoPedidos';
+  tipo: 'ventasModelo' | 'ventasVendedor' | 'topClientes' | 'rentabilidadModelo' | 'tasaConversion' | 'rentabilidadPedido' | 'estadoPedidos' | 'ventasProcedencia';
 }
 
 const ReporteIndividual: React.FC<ReporteIndividualProps> = ({ tipo }) => {
@@ -18,6 +18,8 @@ const ReporteIndividual: React.FC<ReporteIndividualProps> = ({ tipo }) => {
   const [tipos, setTipos] = useState<string[]>([]);
   const [selectedModelo, setSelectedModelo] = useState('');
   const [selectedTipo, setSelectedTipo] = useState('');
+  const [selectedEstado, setSelectedEstado] = useState('');
+  const [selectedDisponible, setSelectedDisponible] = useState('');
 
   // Filtrar modelos según el tipo seleccionado
   const modelosFiltrados = selectedTipo
@@ -60,6 +62,8 @@ const ReporteIndividual: React.FC<ReporteIndividualProps> = ({ tipo }) => {
       const hastaParam = hasta || undefined;
       const modeloParam = selectedModelo || undefined;
       const tipoParam = selectedTipo || undefined;
+      const estadoParam = selectedEstado || undefined;
+      const disponibleParam = selectedDisponible || undefined;
 
       let result = null;
       switch (tipo) {
@@ -82,12 +86,16 @@ const ReporteIndividual: React.FC<ReporteIndividualProps> = ({ tipo }) => {
           result = await reportesService.getRentabilidadCliente(50, desdeParam, hastaParam);
           break;
         case 'estadoPedidos':
-          result = await reportesService.getEstadoPedidos(50, desdeParam, hastaParam, modeloParam, tipoParam);
+          result = await reportesService.getEstadoPedidos(50, desdeParam, hastaParam, modeloParam, tipoParam, estadoParam);
+          break;
+        case 'ventasProcedencia':
+          result = await reportesService.getVentasPorProcedencia(desdeParam, hastaParam, modeloParam, tipoParam, estadoParam, disponibleParam);
           break;
       }
       setData(result);
     } catch (error) {
       console.error('Error loading report:', error);
+      setData(null);
     } finally {
       setLoading(false);
     }
@@ -184,8 +192,8 @@ const ReporteIndividual: React.FC<ReporteIndividualProps> = ({ tipo }) => {
         };
       case 'rentabilidadPedido':
         return {
-          title: 'Rentabilidad por Pedido',
-          description: 'Detalle de rentabilidad individual por pedido incluyendo cliente, monto, costo y margen obtenido',
+          title: 'Rentabilidad por Cliente',
+          description: 'Detalle de rentabilidad por cliente incluyendo ingresos, costo y margen obtenido',
           columns: [
             { key: 'nombreCliente', label: 'Cliente' },
             { key: 'ingresos', label: 'Ingresos', format: fmtMoney },
@@ -199,16 +207,30 @@ const ReporteIndividual: React.FC<ReporteIndividualProps> = ({ tipo }) => {
       case 'estadoPedidos':
         return {
           title: 'Estado de Pedidos',
-          description: 'Resumen de pedidos agrupados por estado con montos totales y pendientes de cobro',
+          description: 'Resumen de pedidos agrupados por disponibilidad: entregado, disponible y pendiente',
           columns: [
-            { key: '_id', label: 'Estado' },
-            { key: 'producto', label: 'Tipo' },
+            { key: '_id', label: 'Disponibilidad' },
             { key: 'cantidad', label: 'Cantidad', format: fmtNum },
             { key: 'monto', label: 'Total Facturado', format: fmtMoney },
             { key: 'monto_pendiente', label: 'Pendiente de Cobrar', format: fmtMoney }
           ],
           data: data?.resumen_estado || [],
           summary: {}
+        };
+      case 'ventasProcedencia':
+        return {
+          title: 'Ventas por Procedencia',
+          description: 'Cantidad de ventas por origen de cliente con filtros de tipo, modelo, estado y disponibilidad',
+          columns: [
+            { key: 'procedencia', label: 'Procedencia' },
+            { key: 'cantidad_ventas', label: 'Cantidad Ventas', format: fmtNum },
+            { key: 'total_facturado', label: 'Total Facturado', format: fmtMoney },
+            { key: 'total_pendiente', label: 'Pendiente de Cobrar', format: fmtMoney },
+            { key: 'ticket_promedio', label: 'Ticket Promedio', format: fmtMoney },
+            { key: 'porcentaje_ventas', label: '% Ventas', format: fmtPct }
+          ],
+          data: data?.data || [],
+          summary: filterSummary(data?.resumen)
         };
       default:
         return {
@@ -247,7 +269,7 @@ const ReporteIndividual: React.FC<ReporteIndividualProps> = ({ tipo }) => {
                 <label>Hasta:</label>
                 <input type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} />
               </div>
-              {(tipo === 'ventasModelo' || tipo === 'ventasVendedor' || tipo === 'rentabilidadModelo' || tipo === 'estadoPedidos') && (
+              {(tipo === 'ventasModelo' || tipo === 'ventasVendedor' || tipo === 'rentabilidadModelo' || tipo === 'estadoPedidos' || tipo === 'ventasProcedencia') && (
                 <>
                   <div className="filter-group">
                     <label>Tipo:</label>
@@ -269,6 +291,28 @@ const ReporteIndividual: React.FC<ReporteIndividualProps> = ({ tipo }) => {
                       ))}
                     </select>
                   </div>
+                  {(tipo === 'estadoPedidos' || tipo === 'ventasProcedencia') && (
+                    <div className="filter-group">
+                      <label>Estado:</label>
+                      <select value={selectedEstado} onChange={(e) => setSelectedEstado(e.target.value)}>
+                        <option value="">Todos los estados</option>
+                        <option value="retira">Retira</option>
+                        <option value="enviar">Enviar</option>
+                        <option value="instalacion">Instalación</option>
+                      </select>
+                    </div>
+                  )}
+                  {tipo === 'ventasProcedencia' && (
+                    <div className="filter-group">
+                      <label>Disponible:</label>
+                      <select value={selectedDisponible} onChange={(e) => setSelectedDisponible(e.target.value)}>
+                        <option value="">Todos</option>
+                        <option value="entregado">Entregado</option>
+                        <option value="disponible">Disponible</option>
+                        <option value="pendiente">Pendiente</option>
+                      </select>
+                    </div>
+                  )}
                 </>
               )}
               <button onClick={loadData} className="btn-apply-filters" style={{ marginTop: '1.5rem' }}>

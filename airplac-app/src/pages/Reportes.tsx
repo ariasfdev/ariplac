@@ -66,6 +66,12 @@ const Reportes: React.FC = () => {
       description: 'Seguimiento y cartera de cobranza',
       path: '/home/reportes/estado-pedidos',
       fase: 'Detallado'
+    },
+    {
+      title: 'Ventas por Procedencia',
+      description: 'Cantidad de ventas por origen con filtros operativos',
+      path: '/home/reportes/ventas-procedencia',
+      fase: 'Detallado'
     }
   ];
 
