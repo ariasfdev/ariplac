@@ -18,6 +18,9 @@ interface ExportableTableProps {
   loading?: boolean;
   error?: string;
   rowsPerPage?: number;
+  onRowClick?: (row: any) => void;
+  selectedRowValue?: string;
+  rowSelectionKey?: string;
 }
 
 const ExportableTable: React.FC<ExportableTableProps> = ({
@@ -29,6 +32,9 @@ const ExportableTable: React.FC<ExportableTableProps> = ({
   loading = false,
   error,
   rowsPerPage = 10,
+  onRowClick,
+  selectedRowValue,
+  rowSelectionKey = '_id'
 }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const formatSummaryLabel = (rawKey: string) => {
@@ -152,7 +158,11 @@ const ExportableTable: React.FC<ExportableTableProps> = ({
                 const paginatedData = data.slice(startIndex, endIndex);
 
                 return paginatedData.map((row, idx) => (
-                  <tr key={idx}>
+                  <tr
+                    key={idx}
+                    onClick={onRowClick ? () => onRowClick(row) : undefined}
+                    style={onRowClick ? { cursor: 'pointer', backgroundColor: row[rowSelectionKey] === selectedRowValue ? 'rgba(0, 86, 179, 0.08)' : undefined } : undefined}
+                  >
                     {columns.map((col) => {
                       const value = row[col.key];
                       let displayValue = '-';

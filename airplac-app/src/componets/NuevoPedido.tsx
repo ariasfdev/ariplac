@@ -606,7 +606,7 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
   };
 
   // Validación
-  const validateForm = () => {
+  const validateForm = (tipoGuardar: string) => {
     if (!cliente.nombre.trim()) {
       setErrorMessage(
         "Por favor, completa todos los campos obligatorios del cliente."
@@ -626,10 +626,18 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
       }
     }
 
+    if (otrosDatos.flete === null || otrosDatos.flete === undefined || Number.isNaN(Number(otrosDatos.flete))) {
+      setErrorMessage("El campo flete es obligatorio.");
+      return false;
+    }
+
     if (
-      !otrosDatos.metodo_pago ||
-      !otrosDatos.procedencia ||
-      !otrosDatos.estado
+      tipoGuardar !== "presupuesto" &&
+      (
+        !otrosDatos.metodo_pago ||
+        !otrosDatos.procedencia ||
+        !otrosDatos.estado
+      )
     ) {
       setErrorMessage(
         "Por favor, completa todos los campos obligatorios en la sección de Otros Datos."
@@ -650,7 +658,7 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
   // Nueva función para guardar con el tipo seleccionado
   const guardarPedido = async (tipoGuardar: string) => {
     setIsLoading(true);
-    if (!validateForm()) {
+    if (!validateForm(tipoGuardar)) {
       setIsLoading(false);
       return;
     }

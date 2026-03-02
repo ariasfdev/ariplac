@@ -20,6 +20,7 @@ const ReporteIndividual: React.FC<ReporteIndividualProps> = ({ tipo }) => {
   const [selectedTipo, setSelectedTipo] = useState('');
   const [selectedEstado, setSelectedEstado] = useState('');
   const [selectedDisponible, setSelectedDisponible] = useState('');
+  const [selectedDisponibilidadDetalle, setSelectedDisponibilidadDetalle] = useState('');
 
   // Filtrar modelos según el tipo seleccionado
   const modelosFiltrados = selectedTipo
@@ -53,6 +54,18 @@ const ReporteIndividual: React.FC<ReporteIndividualProps> = ({ tipo }) => {
       ...item,
       posicion: index + 1
     }));
+  };
+
+  const formatRentabilidadSummary = (summary: any) => {
+    if (!summary) return {};
+    return {
+      total_ingresos: fmtMoney(summary.total_ingresos || 0),
+      total_costo: fmtMoney(summary.total_costo || 0),
+      total_ganancia_bruta: fmtMoney(summary.total_ganancia_bruta || 0),
+      total_costos_adicionales: fmtMoney(summary.total_costos_adicionales || 0),
+      total_ganancia_neta: fmtMoney(summary.total_ganancia_neta || 0),
+      margen_promedio: fmtPct(summary.margen_promedio || 0)
+    };
   };
 
   const loadData = async () => {
@@ -93,9 +106,11 @@ const ReporteIndividual: React.FC<ReporteIndividualProps> = ({ tipo }) => {
           break;
       }
       setData(result);
+      setSelectedDisponibilidadDetalle('');
     } catch (error) {
       console.error('Error loading report:', error);
       setData(null);
+      setSelectedDisponibilidadDetalle('');
     } finally {
       setLoading(false);
     }
@@ -175,7 +190,7 @@ const ReporteIndividual: React.FC<ReporteIndividualProps> = ({ tipo }) => {
             { key: 'margen_neto_pct', label: 'Margen %', format: fmtPct }
           ],
           data: data?.data || [],
-          summary: filterSummary(data?.resumen)
+          summary: formatRentabilidadSummary(data?.resumen)
         };
       case 'tasaConversion':
         return {
@@ -244,6 +259,7 @@ const ReporteIndividual: React.FC<ReporteIndividualProps> = ({ tipo }) => {
   };
 
   const config = getReportConfig();
+  const detalleEstadoSeleccionado = (data?.detalle_pedidos || []).filter((item: any) => item.estado_disponibilidad === selectedDisponibilidadDetalle);
 
   return (
     <div className="reportes-page">
@@ -329,7 +345,50 @@ const ReporteIndividual: React.FC<ReporteIndividualProps> = ({ tipo }) => {
                 data={config.data}
                 summary={config.summary}
                 loading={loading}
+                onRowClick={tipo === 'estadoPedidos' ? (row: any) => {
+                  const rowEstado = row?._id || '';
+                  setSelectedDisponibilidadDetalle(prev => prev === rowEstado ? '' : rowEstado);
+                } : undefined}
+                selectedRowValue={tipo === 'estadoPedidos' ? selectedDisponibilidadDetalle : undefined}
               />
+            )}
+
+            {tipo === 'estadoPedidos' && selectedDisponibilidadDetalle && selectedDisponibilidadDetalle !== 'entregado' && (
+              <div className="table-wrapper" style={{ marginTop: '1rem' }}>
+                <div className="table-header">
+                  <h2>Detalle ({selectedDisponibilidadDetalle})</h2>
+                </div>
+                <div className="table-scroll">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Remito</th>
+                        <th>Cliente</th>
+                        <th>Productos</th>
+                        <th>Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {detalleEstadoSeleccionado.length > 0 ? (
+                        detalleEstadoSeleccionado.map((item: any, index: number) => (
+                          <tr key={`${item.remito}-${index}`}>
+                            <td>{item.remito || '-'}</td>
+                            <td>{item.cliente_nombre || '-'}</td>
+                            <td>{item.productos_concatenados || '-'}</td>
+                            <td>{fmtMoney(item.total || 0)}</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={4} style={{ textAlign: 'center', padding: '20px' }}>
+                            Sin datos para este estado
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             )}
           </div>
         </div>
