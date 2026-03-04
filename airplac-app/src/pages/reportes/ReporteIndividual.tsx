@@ -62,7 +62,6 @@ const ReporteIndividual: React.FC<ReporteIndividualProps> = ({ tipo }) => {
       total_ingresos: fmtMoney(summary.total_ingresos || 0),
       total_costo: fmtMoney(summary.total_costo || 0),
       total_ganancia_bruta: fmtMoney(summary.total_ganancia_bruta || 0),
-      total_costos_adicionales: fmtMoney(summary.total_costos_adicionales || 0),
       total_ganancia_neta: fmtMoney(summary.total_ganancia_neta || 0),
       margen_promedio: fmtPct(summary.margen_promedio || 0)
     };
@@ -184,6 +183,7 @@ const ReporteIndividual: React.FC<ReporteIndividualProps> = ({ tipo }) => {
             { key: 'producto', label: 'Tipo' },
             { key: 'unidad', label: 'Unidad' },
             { key: 'cantidad', label: 'Unidades(m²)', format: fmtNum },
+            { key: 'cantidad_pedidos', label: 'Cant. pedidos', format: fmtNum },
             { key: 'costo_total', label: 'Costo', format: fmtMoney },
             { key: 'ingresos_brutos', label: 'Ingresos', format: fmtMoney },
             { key: 'ganancia_bruta', label: 'Ganancia', format: fmtMoney },
@@ -364,7 +364,7 @@ const ReporteIndividual: React.FC<ReporteIndividualProps> = ({ tipo }) => {
                       <tr>
                         <th>Remito</th>
                         <th>Cliente</th>
-                        <th>Productos</th>
+                        <th>Modelo(s)</th>
                         <th>Total</th>
                       </tr>
                     </thead>
@@ -374,7 +374,7 @@ const ReporteIndividual: React.FC<ReporteIndividualProps> = ({ tipo }) => {
                           <tr key={`${item.remito}-${index}`}>
                             <td>{item.remito || '-'}</td>
                             <td>{item.cliente_nombre || '-'}</td>
-                            <td>{item.productos_concatenados || '-'}</td>
+                            <td>{item.modelos_concatenados || '-'}</td>
                             <td>{fmtMoney(item.total || 0)}</td>
                           </tr>
                         ))

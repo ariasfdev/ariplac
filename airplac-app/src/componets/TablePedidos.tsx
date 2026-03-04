@@ -482,7 +482,7 @@ const TableCell: React.FC<{
       if (producto && producto.idModelo && producto.id_precio) {
         setLoadingPrecio(true);
         api
-          .get(`/stock/precios/${producto.idModelo}`)
+          .get(`/stock/precios/${producto.idModelo}?incluir_inactivos=1`)
           .then((res) => {
             setPreciosModelo(res.data || []);
             producto.preciosModelo = res.data || [];
@@ -604,7 +604,7 @@ const TableCell: React.FC<{
         if (precioObj) {
           return (
             <span className="font-bold text-gray-500">
-              {precioObj.nombre_precio}
+              {precioObj.nombre_precio}{precioObj.activo === false ? " (baja)" : ""}
             </span>
           );
         }
