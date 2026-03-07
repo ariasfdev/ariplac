@@ -226,7 +226,7 @@ const ReporteIndividual: React.FC<ReporteIndividualProps> = ({ tipo }) => {
           columns: [
             { key: '_id', label: 'Disponibilidad' },
             { key: 'cantidad', label: 'Cantidad', format: fmtNum },
-            { key: 'facturado_producto', label: 'Facturado producto', format: fmtMoney },
+            { key: 'facturado_producto', label: 'Total facturado', format: fmtMoney },
             { key: 'monto_pendiente', label: 'Pendiente de Cobrar', format: fmtMoney }
           ],
           data: data?.resumen_estado || [],
@@ -365,7 +365,7 @@ const ReporteIndividual: React.FC<ReporteIndividualProps> = ({ tipo }) => {
                         <th>Remito</th>
                         <th>Cliente</th>
                         <th>Modelo(s)</th>
-                        <th>Facturado producto</th>
+                        <th>Total facturado</th>
                       </tr>
                     </thead>
                     <tbody>
