@@ -226,7 +226,7 @@ const ReporteIndividual: React.FC<ReporteIndividualProps> = ({ tipo }) => {
           columns: [
             { key: '_id', label: 'Disponibilidad' },
             { key: 'cantidad', label: 'Cantidad', format: fmtNum },
-            { key: 'monto', label: 'Total Facturado', format: fmtMoney },
+            { key: 'facturado_producto', label: 'Facturado producto', format: fmtMoney },
             { key: 'monto_pendiente', label: 'Pendiente de Cobrar', format: fmtMoney }
           ],
           data: data?.resumen_estado || [],
@@ -365,7 +365,7 @@ const ReporteIndividual: React.FC<ReporteIndividualProps> = ({ tipo }) => {
                         <th>Remito</th>
                         <th>Cliente</th>
                         <th>Modelo(s)</th>
-                        <th>Total</th>
+                        <th>Facturado producto</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -375,7 +375,7 @@ const ReporteIndividual: React.FC<ReporteIndividualProps> = ({ tipo }) => {
                             <td>{item.remito || '-'}</td>
                             <td>{item.cliente_nombre || '-'}</td>
                             <td>{item.modelos_concatenados || '-'}</td>
-                            <td>{fmtMoney(item.total || 0)}</td>
+                            <td>{fmtMoney(item.facturado_producto || 0)}</td>
                           </tr>
                         ))
                       ) : (
