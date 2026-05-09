@@ -6,6 +6,7 @@ import ModificarPrecio from "../componets/ModificarPrecio";
 import ModeloStockCreatedModal from "../componets/ModeloStockCreatedModal";
 import ErrorModal from "../componets/ErrorModal";
 import { API_BASE_URL } from "../config";
+import { useAuth } from "../context/AuthContext";
 
 interface Modelo {
   _id: string;
@@ -48,6 +49,7 @@ interface BackendResponse {
 }
 
 const Modelos = () => {
+  const { isAuthenticated, loading: authLoading } = useAuth();
   const [modelos, setModelos] = useState<Modelo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -83,19 +85,21 @@ const Modelos = () => {
   const [deleteSuccess, setDeleteSuccess] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchModelos = async () => {
-      try {
-        const response = await axios.get(`${API_BASE_URL}/modelos/`);
-        setModelos(response.data);
-        setLoading(false);
-      } catch (err) {
-        setError("Error al cargar los modelos.");
-        setLoading(false);
-      }
-    };
+    if (!authLoading && isAuthenticated) {
+      const fetchModelos = async () => {
+        try {
+          const response = await axios.get(`${API_BASE_URL}/modelos/`);
+          setModelos(response.data);
+          setLoading(false);
+        } catch (err) {
+          setError("Error al cargar los modelos.");
+          setLoading(false);
+        }
+      };
 
-    fetchModelos();
-  }, []);
+      fetchModelos();
+    }
+  }, [authLoading, isAuthenticated]);
 
   const handleEdit = (modelo: Modelo) => {
     setSelectedModelo(modelo);

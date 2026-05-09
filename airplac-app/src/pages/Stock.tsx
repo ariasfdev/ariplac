@@ -40,7 +40,7 @@ interface Stock {
 }
 
 const Stock: React.FC = () => {
-  const { userRole } = useAuth();
+  const { userRole, isAuthenticated, loading: authLoading } = useAuth();
   const [stocks, setStocks] = useState<Stock[]>([]);
   const [filteredStocks, setFilteredStocks] = useState<Stock[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,7 +63,6 @@ const Stock: React.FC = () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/stock/`);
       setStocks(response.data);
-      console.log(response.data);
       
       // Si hay un filtro activo y se solicita preservarlo, re-aplicar el filtro
       if (preserveFilter && searchTerm) {
@@ -96,9 +95,11 @@ const Stock: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchStocks();
-    fetchModelos();
-  }, []);
+    if (!authLoading && isAuthenticated) {
+      fetchStocks();
+      fetchModelos();
+    }
+  }, [authLoading, isAuthenticated]);
 
   const buscarStock = (value: string) => {
     setSearchTerm(value);

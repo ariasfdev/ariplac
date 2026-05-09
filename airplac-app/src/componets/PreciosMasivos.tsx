@@ -4,6 +4,7 @@ import { API_BASE_URL } from "../config";
 import Modal from "./Modal";
 import ErrorModal from "./ErrorModal";
 import SuccessModal from "./SuccessModal";
+import { useAuth } from "../context/AuthContext";
 
 interface PreciosMasivosProps {
   isOpen: boolean;
@@ -39,11 +40,12 @@ const PreciosMasivos: React.FC<PreciosMasivosProps> = ({
   tipo,
   onSuccess,
 }) => {
+  const { isAuthenticated, loading: authLoading } = useAuth();
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [modelos, setModelos] = useState<Modelo[]>([]);
   const [excluidos, setExcluidos] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
-
+  
   // Campos para actualización
   const [costo, setCosto] = useState<string>("");
   const [porcentajeGanancia, setPorcentajeGanancia] = useState<string>("");
@@ -53,24 +55,24 @@ const PreciosMasivos: React.FC<PreciosMasivosProps> = ({
   const [totalRedondeo, setTotalRedondeo] = useState<string>("0");
   const [editingGanancia, setEditingGanancia] = useState<boolean>(false);
   const [editingPorcentaje, setEditingPorcentaje] = useState<boolean>(false);
-
+  
   // Campos para adicional
   const [nombrePrecio, setNombrePrecio] = useState<string>("");
-
+  
   // Preview y resultados
   const [previewData, setPreviewData] = useState<PreviewData | null>(null);
   const [resultData, setResultData] = useState<any>(null);
-
+  
   // Modales
   const [error, setError] = useState<string>("");
   const [success, setSuccess] = useState<string>("");
 
   useEffect(() => {
-    if (isOpen && producto) {
+    if (isOpen && producto && !authLoading && isAuthenticated) {
       fetchModelos();
       resetForm();
     }
-  }, [isOpen, producto]);
+  }, [isOpen, producto, authLoading, isAuthenticated]);
 
   const resetForm = () => {
     setStep(1);
@@ -364,7 +366,7 @@ const PreciosMasivos: React.FC<PreciosMasivosProps> = ({
               {/* Campos de precio */}
               <div className="bg-base-200 p-4 rounded-lg">
                 <h3 className="font-bold mb-4">Configuración de Precios</h3>
-
+                
                 {tipo === "adicional" && (
                   <div className="form-control mb-4">
                     <label className="label">
@@ -397,9 +399,9 @@ const PreciosMasivos: React.FC<PreciosMasivosProps> = ({
                             : ""
                         }
                         onChange={(e) => {
-                          // Match ModificarPrecio: keep only digits (treat input as integer units)
-                          const raw = e.target.value.replace(/[^\d]/g, "");
-                          setCosto(raw === "" ? "" : String(Number(raw)));
+                            // Match ModificarPrecio: keep only digits (treat input as integer units)
+                            const raw = e.target.value.replace(/[^\d]/g, "");
+                            setCosto(raw === "" ? "" : String(Number(raw)));
                         }}
                         placeholder="0"
                       />
@@ -414,45 +416,45 @@ const PreciosMasivos: React.FC<PreciosMasivosProps> = ({
                       <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 pointer-events-none z-10">
                         $
                       </span>
-                      <input
-                        type="text"
+                    <input
+                      type="text"
                         className="input input-bordered w-full pl-10"
-                        value={gananciaInput}
-                        onChange={(e) => {
+                      value={gananciaInput}
+                      onChange={(e) => {
                           // Solo aceptar dígitos (enteros), igual que ModificarPrecio
                           let value = e.target.value.replace(/[^\d]/g, "");
-                          setGananciaInput(value);
+                        setGananciaInput(value);
                           const numValue =
                             value === "" ? undefined : Number(value);
-                          handleGananciaChange(numValue);
-                        }}
-                        onBlur={() => {
+                        handleGananciaChange(numValue);
+                      }}
+                      onBlur={() => {
                           // NO poner editingGanancia en false para preservar el valor exacto
                           // Solo actualizar el formato del input
-                          if (ganancia !== undefined && ganancia > 0) {
-                            setGananciaInput(
+                        if (ganancia !== undefined && ganancia > 0) {
+                          setGananciaInput(
                               `$${ganancia.toLocaleString("es-AR", {
                                 minimumFractionDigits: 2,
                                 maximumFractionDigits: 2,
                               })}`
-                            );
+                          );
                             // Mantener editingGanancia en true para que el useEffect no recalcule
                             // Esto preserva el valor exacto que el usuario ingresó
-                          } else {
-                            setGananciaInput("");
+                        } else {
+                          setGananciaInput("");
                             setEditingGanancia(false);
-                          }
-                        }}
-                        onFocus={() => {
-                          setEditingGanancia(true);
-                          if (ganancia !== undefined && ganancia > 0) {
-                            setGananciaInput(ganancia.toString());
-                          } else {
-                            setGananciaInput("");
-                          }
-                        }}
-                        placeholder="0"
-                      />
+                        }
+                      }}
+                      onFocus={() => {
+                        setEditingGanancia(true);
+                        if (ganancia !== undefined && ganancia > 0) {
+                          setGananciaInput(ganancia.toString());
+                        } else {
+                          setGananciaInput("");
+                        }
+                      }}
+                      placeholder="0"
+                    />
                     </div>
                   </div>
 
@@ -615,13 +617,13 @@ const PreciosMasivos: React.FC<PreciosMasivosProps> = ({
                 {/* Modelos que se actualizarán/crearán */}
                 {tipo === "actualizar" &&
                   previewData.actualizados?.length > 0 && (
-                    <div className="collapse collapse-arrow bg-success/10 border border-success">
-                      <input type="checkbox" defaultChecked />
-                      <div className="collapse-title font-bold text-success">
+                  <div className="collapse collapse-arrow bg-success/10 border border-success">
+                    <input type="checkbox" defaultChecked />
+                    <div className="collapse-title font-bold text-success">
                         ✅ Modelos que se actualizarán (
                         {previewData.actualizados.length})
-                      </div>
-                      <div className="collapse-content max-h-60 overflow-y-auto">
+                    </div>
+                    <div className="collapse-content max-h-60 overflow-y-auto">
                         {previewData.actualizados.map(
                           (item: any, idx: number) => (
                             <div
@@ -631,9 +633,9 @@ const PreciosMasivos: React.FC<PreciosMasivosProps> = ({
                               <p className="font-bold text-base">
                                 {item.modelo}
                               </p>
-                              <div className="grid grid-cols-2 gap-3 mt-2 text-sm">
-                                <div className="text-base-content/60">
-                                  <p className="font-semibold mb-1">Antes:</p>
+                          <div className="grid grid-cols-2 gap-3 mt-2 text-sm">
+                            <div className="text-base-content/60">
+                              <p className="font-semibold mb-1">Antes:</p>
                                   <p>
                                     Precio base: ${item.precio_anterior.precio}
                                   </p>
@@ -641,9 +643,9 @@ const PreciosMasivos: React.FC<PreciosMasivosProps> = ({
                                     Con tarjeta: $
                                     {item.precio_anterior.precioTarjeta}
                                   </p>
-                                </div>
-                                <div className="text-success">
-                                  <p className="font-semibold mb-1">Después:</p>
+                            </div>
+                            <div className="text-success">
+                              <p className="font-semibold mb-1">Después:</p>
                                   <p>
                                     Precio base: ${item.precio_nuevo.precio}
                                   </p>
@@ -651,47 +653,47 @@ const PreciosMasivos: React.FC<PreciosMasivosProps> = ({
                                     Con tarjeta: $
                                     {item.precio_nuevo.precioTarjeta}
                                   </p>
-                                </div>
-                              </div>
                             </div>
+                          </div>
+                        </div>
                           )
                         )}
-                      </div>
                     </div>
-                  )}
+                  </div>
+                )}
 
                 {/* Precios adicionales que se crearán */}
                 {tipo === "adicional" &&
                   previewData.precios_creados?.length > 0 && (
-                    <div className="collapse collapse-arrow bg-success/10 border border-success">
-                      <input type="checkbox" defaultChecked />
-                      <div className="collapse-title font-bold text-success">
+                  <div className="collapse collapse-arrow bg-success/10 border border-success">
+                    <input type="checkbox" defaultChecked />
+                    <div className="collapse-title font-bold text-success">
                         ✅ Precios que se crearán (
                         {previewData.precios_creados.length})
-                      </div>
-                      <div className="collapse-content max-h-60 overflow-y-auto">
+                    </div>
+                    <div className="collapse-content max-h-60 overflow-y-auto">
                         {previewData.precios_creados.map(
                           (item: any, idx: number) => (
                             <div
                               key={idx}
                               className="p-2 bg-base-100 rounded mb-2"
                             >
-                              <p className="font-bold">{item.modelo}</p>
-                              <div className="text-sm">
-                                <p className="text-base-content/60">
-                                  Nombre: {item.nuevo_precio.nombre_precio}
-                                </p>
-                                <p className="text-success">
+                          <p className="font-bold">{item.modelo}</p>
+                          <div className="text-sm">
+                            <p className="text-base-content/60">
+                              Nombre: {item.nuevo_precio.nombre_precio}
+                            </p>
+                            <p className="text-success">
                                   ${item.nuevo_precio.precio} / $
                                   {item.nuevo_precio.precioTarjeta}
-                                </p>
-                              </div>
-                            </div>
+                            </p>
+                          </div>
+                        </div>
                           )
                         )}
-                      </div>
                     </div>
-                  )}
+                  </div>
+                )}
 
                 {/* Modelos con pedidos activos */}
                 {previewData.con_pedidos_activos.length > 0 && (
@@ -708,11 +710,11 @@ const PreciosMasivos: React.FC<PreciosMasivosProps> = ({
                             key={idx}
                             className="p-2 bg-base-100 rounded mb-2"
                           >
-                            <p className="font-bold">{item.modelo}</p>
-                            <p className="text-sm text-base-content/60">
-                              {item.pedidos_activos.length} pedidos activos
-                            </p>
-                          </div>
+                          <p className="font-bold">{item.modelo}</p>
+                          <p className="text-sm text-base-content/60">
+                            {item.pedidos_activos.length} pedidos activos
+                          </p>
+                        </div>
                         )
                       )}
                     </div>
@@ -734,8 +736,8 @@ const PreciosMasivos: React.FC<PreciosMasivosProps> = ({
                             key={idx}
                             className="p-2 bg-base-100 rounded mb-2"
                           >
-                            <p className="font-bold">{item.modelo}</p>
-                          </div>
+                          <p className="font-bold">{item.modelo}</p>
+                        </div>
                         )
                       )}
                     </div>
@@ -824,25 +826,25 @@ const PreciosMasivos: React.FC<PreciosMasivosProps> = ({
               {/* Detalles de actualizaciones */}
               {tipo === "actualizar" &&
                 resultData.detalles?.actualizados?.length > 0 && (
-                  <div className="collapse collapse-arrow bg-success/10 border-2 border-success">
-                    <input type="checkbox" defaultChecked />
-                    <div className="collapse-title font-bold text-success text-lg">
+                <div className="collapse collapse-arrow bg-success/10 border-2 border-success">
+                  <input type="checkbox" defaultChecked />
+                  <div className="collapse-title font-bold text-success text-lg">
                       ✅ Modelos actualizados exitosamente (
                       {resultData.detalles.actualizados.length})
-                    </div>
-                    <div className="collapse-content max-h-80 overflow-y-auto">
-                      <div className="space-y-2 mt-2">
+                  </div>
+                  <div className="collapse-content max-h-80 overflow-y-auto">
+                    <div className="space-y-2 mt-2">
                         {resultData.detalles.actualizados.map(
                           (item: any, idx: number) => (
                             <div
                               key={idx}
                               className="bg-base-100 p-3 rounded-lg shadow"
                             >
-                              <p className="font-bold text-lg">{item.modelo}</p>
-                              <div className="text-sm mt-2 grid grid-cols-2 gap-4">
-                                <div className="text-base-content/60">
-                                  <p className="font-semibold mb-2">Antes:</p>
-                                  <p>Costo: ${item.precio_anterior.costo}</p>
+                          <p className="font-bold text-lg">{item.modelo}</p>
+                          <div className="text-sm mt-2 grid grid-cols-2 gap-4">
+                            <div className="text-base-content/60">
+                              <p className="font-semibold mb-2">Antes:</p>
+                              <p>Costo: ${item.precio_anterior.costo}</p>
                                   <p>
                                     Precio base: ${item.precio_anterior.precio}
                                   </p>
@@ -850,9 +852,9 @@ const PreciosMasivos: React.FC<PreciosMasivosProps> = ({
                                     Con tarjeta: $
                                     {item.precio_anterior.precioTarjeta}
                                   </p>
-                                </div>
-                                <div className="text-success">
-                                  <p className="font-semibold mb-2">Después:</p>
+                            </div>
+                            <div className="text-success">
+                              <p className="font-semibold mb-2">Después:</p>
                                   <p className="font-medium">
                                     Costo: ${item.precio_nuevo.costo}
                                   </p>
@@ -863,53 +865,53 @@ const PreciosMasivos: React.FC<PreciosMasivosProps> = ({
                                     Con tarjeta: $
                                     {item.precio_nuevo.precioTarjeta}
                                   </p>
-                                </div>
-                              </div>
                             </div>
+                          </div>
+                        </div>
                           )
                         )}
-                      </div>
                     </div>
                   </div>
-                )}
+                </div>
+              )}
 
               {/* Precios adicionales creados */}
               {tipo === "adicional" &&
                 resultData.detalles?.precios_creados?.length > 0 && (
-                  <div className="collapse collapse-arrow bg-success/10 border-2 border-success">
-                    <input type="checkbox" defaultChecked />
-                    <div className="collapse-title font-bold text-success text-lg">
+                <div className="collapse collapse-arrow bg-success/10 border-2 border-success">
+                  <input type="checkbox" defaultChecked />
+                  <div className="collapse-title font-bold text-success text-lg">
                       ✅ Precios adicionales creados (
                       {resultData.detalles.precios_creados.length})
-                    </div>
-                    <div className="collapse-content max-h-80 overflow-y-auto">
-                      <div className="space-y-2 mt-2">
+                  </div>
+                  <div className="collapse-content max-h-80 overflow-y-auto">
+                    <div className="space-y-2 mt-2">
                         {resultData.detalles.precios_creados.map(
                           (item: any, idx: number) => (
                             <div
                               key={idx}
                               className="bg-base-100 p-3 rounded-lg shadow"
                             >
-                              <p className="font-bold text-lg">{item.modelo}</p>
-                              <div className="text-sm mt-2">
-                                <p className="text-base-content/60">
-                                  Nombre: {item.nuevo_precio.nombre_precio}
-                                </p>
-                                <p className="text-base-content/60">
-                                  Costo: ${item.nuevo_precio.costo}
-                                </p>
-                                <p className="text-success font-bold">
+                          <p className="font-bold text-lg">{item.modelo}</p>
+                          <div className="text-sm mt-2">
+                            <p className="text-base-content/60">
+                              Nombre: {item.nuevo_precio.nombre_precio}
+                            </p>
+                            <p className="text-base-content/60">
+                              Costo: ${item.nuevo_precio.costo}
+                            </p>
+                            <p className="text-success font-bold">
                                   Precio: ${item.nuevo_precio.precio} / Tarjeta:
                                   ${item.nuevo_precio.precioTarjeta}
-                                </p>
-                              </div>
-                            </div>
+                            </p>
+                          </div>
+                        </div>
                           )
                         )}
-                      </div>
                     </div>
                   </div>
-                )}
+                </div>
+              )}
 
               {/* Modelos con pedidos activos */}
               {resultData.detalles?.con_pedidos_activos?.length > 0 && (
@@ -927,11 +929,11 @@ const PreciosMasivos: React.FC<PreciosMasivosProps> = ({
                             key={idx}
                             className="bg-base-100 p-3 rounded-lg shadow"
                           >
-                            <p className="font-bold">{item.modelo}</p>
+                          <p className="font-bold">{item.modelo}</p>
                             <p className="text-sm text-warning">
                               {item.pedidos_activos.length} pedidos activos
                             </p>
-                          </div>
+                        </div>
                         )
                       )}
                     </div>
@@ -955,8 +957,8 @@ const PreciosMasivos: React.FC<PreciosMasivosProps> = ({
                             key={idx}
                             className="bg-base-100 p-3 rounded-lg shadow"
                           >
-                            <p className="font-bold">{item.modelo}</p>
-                          </div>
+                          <p className="font-bold">{item.modelo}</p>
+                        </div>
                         )
                       )}
                     </div>
@@ -967,8 +969,8 @@ const PreciosMasivos: React.FC<PreciosMasivosProps> = ({
               <button
                 className="btn btn-primary btn-lg w-full"
                 onClick={() => {
-                  onSuccess();
-                  handleClose();
+                onSuccess();
+                handleClose();
                 }}
               >
                 Cerrar

@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import ExportableTable from '../../components/ExportableTable';
 import { reportesService } from '../../services/reportes.service';
 import '../../styles/Reportes.css';
+import { useAuth } from '../../context/AuthContext';
 
 interface ReporteIndividualProps {
   tipo: 'ventasModelo' | 'ventasVendedor' | 'topClientes' | 'rentabilidadModelo' | 'tasaConversion' | 'rentabilidadPedido' | 'estadoPedidos' | 'ventasProcedencia';
 }
 
 const ReporteIndividual: React.FC<ReporteIndividualProps> = ({ tipo }) => {
+  const { isAuthenticated, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -116,9 +118,11 @@ const ReporteIndividual: React.FC<ReporteIndividualProps> = ({ tipo }) => {
   };
 
   useEffect(() => {
-    loadData();
-    loadModelosDisponibles();
-  }, [tipo]);
+    if (!authLoading && isAuthenticated) {
+      loadData();
+      loadModelosDisponibles();
+    }
+  }, [tipo, authLoading, isAuthenticated]);
 
   const loadModelosDisponibles = async () => {
     try {

@@ -473,11 +473,12 @@ const TableCell: React.FC<{
   isExpanded?: boolean
   tieneMasDeUnProducto?: boolean
 }> = ({ col, row, isExpanded, tieneMasDeUnProducto }) => {
+  const { isAuthenticated, loading } = useAuth();
   const [preciosModelo, setPreciosModelo] = useState<any[]>([]);
   const [loadingPrecio, setLoadingPrecio] = useState(false);
 
   useEffect(() => {
-    if (col.key === "materiales") {
+    if (col.key === "materiales" && !loading && isAuthenticated) {
       const producto = row.productos && row.productos[0];
       if (producto && producto.idModelo && producto.id_precio) {
         setLoadingPrecio(true);
@@ -496,7 +497,7 @@ const TableCell: React.FC<{
       }
     }
     // eslint-disable-next-line
-  }, [row]);
+  }, [row, loading, isAuthenticated]);
 
   const renderCellContent = () => {
     if (col.key === "total" || col.key === "total_pendiente") {
@@ -643,7 +644,8 @@ const TableCell: React.FC<{
 
 // Componente principal de la tabla
 const TablePedidos: React.FC = () => {
-  const { pedidos, fetchPedidos, error } = useAppContext()
+  const { isAuthenticated, loading: authLoading } = useAuth()
+  const { pedidos, fetchPedidos, error, loading } = useAppContext()
   const tableState = useTableState()
   const modalState = useModalState()
   const messageState = useMessageState()
@@ -709,8 +711,10 @@ const TablePedidos: React.FC = () => {
   }
 
   useEffect(() => {
-    fetchPedidos()
-  }, []) // Se ejecuta solo al montar el componente
+    if (!authLoading && isAuthenticated) {
+      fetchPedidos()
+    }
+  }, [authLoading, isAuthenticated, fetchPedidos]) // Espera a que la autenticación esté lista
 
   // Funciones de manejo de eventos
   const toggleExpand = useCallback(
@@ -994,9 +998,18 @@ const sortedPedidos = useMemo(() => {
         />
 
         <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="overflow-x-auto flex-1">
-            <table className="table table-zebra w-full">
-              <thead>
+          {loading ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="flex flex-col items-center gap-4">
+                <span className="loading loading-spinner loading-lg text-primary"></span>
+                <p className="text-base-content/70">Cargando pedidos...</p>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="overflow-x-auto flex-1">
+                <table className="table table-zebra w-full">
+                <thead>
                 <tr className="bg-base-200">
                   {visibleColumns
                     .filter((col) => col.visible)
@@ -1225,53 +1238,55 @@ const sortedPedidos = useMemo(() => {
                   )
                 })}
               </tbody>
-            </table>
-          </div>
-          {/* Paginación */}
-          <div className="bg-base-200 px-6 py-4 border-t">
-            <div className="flex justify-between items-center">
-              <div className="text-sm text-base-content/60">
-                Mostrando {indexOfFirstItem + 1} a {Math.min(indexOfLastItem, sortedPedidos.length)} de{" "}
-                {sortedPedidos.length} pedidos
+                </table>
               </div>
-              <div className="join">
-                <button
-                  className="join-item btn btn-sm"
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                </button>
-
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  const pageNum = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i
-                  if (pageNum > totalPages) return null
-
-                  return (
+              {/* Paginación */}
+              <div className="bg-base-200 px-6 py-4 border-t">
+                <div className="flex justify-between items-center">
+                  <div className="text-sm text-base-content/60">
+                    Mostrando {indexOfFirstItem + 1} a {Math.min(indexOfLastItem, sortedPedidos.length)} de{" "}
+                    {sortedPedidos.length} pedidos
+                  </div>
+                  <div className="join">
                     <button
-                      key={pageNum}
-                      className={`join-item btn btn-sm ${currentPage === pageNum ? "btn-primary" : ""}`}
-                      onClick={() => handlePageChange(pageNum)}
+                      className="join-item btn btn-sm"
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
                     >
-                      {pageNum}
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
                     </button>
-                  )
-                })}
 
-                <button
-                  className="join-item btn btn-sm"
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      const pageNum = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i
+                      if (pageNum > totalPages) return null
+
+                      return (
+                        <button
+                          key={pageNum}
+                          className={`join-item btn btn-sm ${currentPage === pageNum ? "btn-primary" : ""}`}
+                          onClick={() => handlePageChange(pageNum)}
+                        >
+                          {pageNum}
+                        </button>
+                      )
+                    })}
+
+                    <button
+                      className="join-item btn btn-sm"
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+            </>
+          )}
         </div>
       </div>
 

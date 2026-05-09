@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { API_BASE_URL } from "../config";
 import PreciosMasivos from "../componets/PreciosMasivos";
+import { useAuth } from "../context/AuthContext";
 
 interface Producto {
   nombre: string;
@@ -9,6 +10,7 @@ interface Producto {
 }
 
 const Precios = () => {
+  const { isAuthenticated, loading: authLoading } = useAuth();
   const [productos, setProductos] = useState<Producto[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -17,8 +19,10 @@ const Precios = () => {
   const [modalType, setModalType] = useState<"actualizar" | "adicional">("actualizar");
 
   useEffect(() => {
-    fetchProductos();
-  }, []);
+    if (!authLoading && isAuthenticated) {
+      fetchProductos();
+    }
+  }, [authLoading, isAuthenticated]);
 
   const fetchProductos = async () => {
     try {

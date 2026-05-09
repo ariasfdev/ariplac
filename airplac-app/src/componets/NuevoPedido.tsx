@@ -6,6 +6,7 @@ import { useAppContext } from "../context/AppContext";
 import { API_BASE_URL } from "../config";
 import { getModelos, getPrecioByIdModelo } from "../services/pedidos.service";
 import ErrorModal from "./ErrorModal";
+import { useAuth } from "../context/AuthContext";
 
 interface NuevoPedidoProps {
   onClose: () => void;
@@ -41,6 +42,7 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
   tipoInicial,
   mostrarPasarAPedido,
 }) => {
+  const { isAuthenticated, loading: authLoading } = useAuth();
   const { fetchPedidos } = useAppContext();
 
   const [stockData, setStockData] = useState<any[]>([]);
@@ -120,22 +122,23 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
 
   // Cargar datos de stock
   useEffect(() => {
-    const fetchStockData = async () => {
-      try {
-        const response = await axios.get(`${API_BASE_URL}/stock/`);
-        console.log(response.data);
-        setStockData(response.data.filter((item: any) => item.stockActivo));
-      } catch (err) {
-        console.error("Error al obtener datos del stock:", err);
-      }
-    };
-    fetchStockData();
-    const fetchModeloData = async () => {
-      const response = await getModelos();
-      setModeloData(response);
-    };
-    fetchModeloData();
-  }, []);
+    if (!authLoading && isAuthenticated) {
+      const fetchStockData = async () => {
+        try {
+          const response = await axios.get(`${API_BASE_URL}/stock/`);
+          setStockData(response.data.filter((item: any) => item.stockActivo));
+        } catch (err) {
+          console.error("Error al obtener datos del stock:", err);
+        }
+      };
+      fetchStockData();
+      const fetchModeloData = async () => {
+        const response = await getModelos();
+        setModeloData(response);
+      };
+      fetchModeloData();
+    }
+  }, [authLoading, isAuthenticated]);
 
   /**
    * Recalcula el total cada vez que cambian:
@@ -191,8 +194,12 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
             let precio = 0;
             let precioTarjeta = 0;
             let id_precio = p.id_precio || "";
-            // Buscar precios por idModelo
-            const preciosModelo = await getPrecioByIdModelo(p.idModelo || p.idStock);
+            // Buscar precios por idModelo - validar que no esté vacío
+            const idModeloValido = (p.idModelo || p.idStock)?.trim();
+            let preciosModelo: any[] = [];
+            if (idModeloValido) {
+              preciosModelo = await getPrecioByIdModelo(idModeloValido);
+            }
             let precioSeleccionado = preciosModelo?.find((pr: any) => pr._id === id_precio);
             if (precioSeleccionado) {
               precio = precioSeleccionado.precio || 0;
@@ -225,9 +232,10 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
           productosConPrecios.map((p) => p.producto || "")
         );
         const preciosArray = await Promise.all(
-          productosConPrecios.map((p) =>
-            getPrecioByIdModelo(p.idModelo || p.idStock)
-          )
+          productosConPrecios.map((p) => {
+            const idModeloValido = (p.idModelo || p.idStock)?.trim();
+            return idModeloValido ? getPrecioByIdModelo(idModeloValido) : Promise.resolve([]);
+          })
         );
         setPreciosPorProducto(preciosArray);
       };
@@ -426,8 +434,9 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
   // Cargar precios del producto correspondiente al cambiar de tab
   useEffect(() => {
     const prod = productos[activeTab];
-    if (prod?.idModelo) {
-      getPrecioByIdModelo(prod.idModelo).then((precios) => {
+    const idModeloValido = prod?.idModelo?.trim();
+    if (idModeloValido) {
+      getPrecioByIdModelo(idModeloValido).then((precios) => {
         setPreciosPorProducto((prev) => {
           const copy = [...prev];
           copy[activeTab] = precios;
@@ -443,9 +452,9 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
     const productoSeleccionado = modeloData.find(
       (item) => item._id === idModelo
     );
-    if (!productoSeleccionado) return;
+    if (!productoSeleccionado || !productoSeleccionado._id?.trim()) return;
 
-    const precios = await getPrecioByIdModelo(productoSeleccionado._id);
+    const precios = await getPrecioByIdModelo(productoSeleccionado._id.trim());
 
     // Validar precios
     const tienePrecioValido = precios.some(
@@ -485,8 +494,19 @@ const NuevoPedido: React.FC<NuevoPedidoProps> = ({
   // Nuevo efecto: Si cambia el modelo de un producto ya existente, actualizar los precios y limpiar los precios seleccionados
   useEffect(() => {
     productos.forEach(async (prod, idx) => {
+      // Validar que idModelo no esté vacío antes de hacer el request
+      const idModeloValido = prod.idModelo?.trim();
+      if (!idModeloValido) {
+        setPreciosPorProducto((prev) => {
+          const copy = [...prev];
+          copy[idx] = [];
+          return copy;
+        });
+        return;
+      }
+
       // Solo limpiar el precio si el modelo cambió respecto al anterior
-      const precios = await getPrecioByIdModelo(prod.idModelo);
+      const precios = await getPrecioByIdModelo(idModeloValido);
       setPreciosPorProducto((prev) => {
         const copy = [...prev];
         copy[idx] = precios;

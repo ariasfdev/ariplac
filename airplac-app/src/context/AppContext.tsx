@@ -7,6 +7,7 @@ import React, {
   useCallback,
 } from "react";
 import { api } from "../services/api";
+import { useAuth } from "./AuthContext";
 
 interface Pedido {
   id: string;
@@ -31,6 +32,7 @@ interface AppContextType {
   addPedido: (nuevoPedido: Pedido) => void;
   error: string | null;
   setError: React.Dispatch<React.SetStateAction<string | null>>;
+  loading: boolean;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -38,19 +40,24 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
+  const { isAuthenticated, loading: authLoading } = useAuth();
   const [isNavVisible, setIsNavVisible] = useState(true);
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   // Función para obtener pedidos desde el backend
   const fetchPedidos = useCallback(async () => {
+    setLoading(true);
     try {
       const response = await api.get("/pedidos/");
-      console.log(response.data);
       setPedidos(response.data);
+      setError(null);
     } catch (err) {
       console.error("Error al obtener los pedidos:", err);
       setError("No se pudieron cargar los pedidos.");
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -59,10 +66,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
     setPedidos((prev) => [...prev, nuevoPedido]);
   };
 
-  // Llama a fetchPedidos al cargar el proveedor
+  // Llama a fetchPedidos solo cuando la autenticación esté lista
   useEffect(() => {
-    fetchPedidos();
-  }, []); // Se ejecuta solo al montar el componente
+    if (!authLoading && isAuthenticated) {
+      fetchPedidos();
+    }
+  }, [authLoading, isAuthenticated, fetchPedidos]);
 
   return (
     <AppContext.Provider
@@ -74,6 +83,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
         addPedido,
         error,
         setError,
+        loading,
       }}
     >
       {children}

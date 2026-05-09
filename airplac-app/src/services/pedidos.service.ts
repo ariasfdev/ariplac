@@ -4,13 +4,16 @@ import { api } from "./api";
 
 export const getModelos = async () => {
     const response = await api.get("/modelos/");
-    console.log(response.data);
     return response.data;
 };
 
 export const getPrecioByIdModelo = async (idModelo: string) => {
-    const response = await api.get(`/stock/precios/${idModelo}`);
-    console.log(response.data);
+    // Validar que idModelo no esté vacío
+    if (!idModelo || !idModelo.trim()) {
+        console.warn("getPrecioByIdModelo: idModelo está vacío, retornando array vacío");
+        return [];
+    }
+    const response = await api.get(`/stock/precios/${idModelo.trim()}`);
     return response.data;
 };
 

@@ -3,6 +3,7 @@ import { obtenerUsuarios, crearUsuario, actualizarUsuario, toggleUserStatus, res
 import Modal from '../componets/Modal';
 import SuccessModal from '../componets/SuccessModal';
 import ErrorModal from '../componets/ErrorModal';
+import { useAuth } from '../context/AuthContext';
 
 interface PasswordRequirement {
   label: string;
@@ -41,6 +42,7 @@ const getPasswordRequirements = (password: string): PasswordRequirement[] => {
 };
 
 const Usuarios: React.FC = () => {
+  const { isAuthenticated, loading: authLoading } = useAuth();
   const DEFAULT_SUCURSAL_ID = '696bf44f76430ec803078081';
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [roles, setRoles] = useState<Rol[]>([]);
@@ -77,9 +79,11 @@ const Usuarios: React.FC = () => {
   });
 
   useEffect(() => {
-    fetchUsuarios();
-    fetchRoles();
-  }, []);
+    if (!authLoading && isAuthenticated) {
+      fetchUsuarios();
+      fetchRoles();
+    }
+  }, [authLoading, isAuthenticated]);
 
   const fetchUsuarios = async () => {
     setLoading(true);
